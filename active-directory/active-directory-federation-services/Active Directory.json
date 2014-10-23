@@ -1,0 +1,163 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+
+  "Description" : "JSON string",
+
+  "Parameters" : {
+
+    "InstanceType" : {
+      "Description" : "Amazon EC2 instance type",
+      "Type" : "String",
+      "Default" : "t2.small",
+      "AllowedValues" : ["t2.micro", "t2.small", "t2.medium", "m3.medium", "m3.large", "m3.xlarge", "m3.2xlarge"]
+    },
+
+    "KeyPair" : {
+      "Description" : "Public/private key pairs allow you to securely connect to your instance after it launches",
+      "Type" : "String"
+    }
+
+  },
+
+  "Mappings" : {
+
+    "WindowsAMI"    : {
+      "us-east-1" : {"64" : "ami-904be6f8"},
+      "us-west-2" : {"64" : "ami-d38dcce3"},
+      "us-west-1" : {"64" : "ami-09626b4c"},
+      "eu-west-1" : {"64" : "ami-d02386a7"}
+    },
+
+    "LinuxAMI"  : {
+      "us-east-1" : {"64" : "ami-4c9e4b24"},
+      "us-west-2" : {"64" : "ami-bb69128b"},
+      "us-west-1" : {"64" : "ami-2b2b296e"},
+      "eu-west-1" : {"64" : "ami-3760b040"}
+    }
+
+  },
+
+  "Conditions" : {
+  },
+
+  "Resources" : {
+
+    "AD1" : {
+      "DependsOn" : "NAT1",
+      "Type" : "AWS::EC2::Instance",
+      "Properties" : {
+        "ImageId" : { "Fn::FindInMap" : [ "WindowsAMI", { "Ref" : "AWS::Region" }, "64"]},
+        "InstanceType" : {"Ref" : "InstanceType"},
+        "Tags" : [{"Key" : "Name", "Value" : "AD1"}],
+        "BlockDeviceMappings" : [{"DeviceName" : "/dev/sda1","Ebs" : {"VolumeSize" : "60", "VolumeType" : "standard"}}],
+        "KeyName" : {"Ref" : "KeyPair"},
+        "UserData" : {"Fn::Base64" : {"Fn::Join" : ["",["<script>\n","cfn-init.exe -v -c config -s ",{"Ref" : "AWS::StackId"}," -r AD1"," --region ",{"Ref" : "AWS::Region"},"\n","</script>\n"]]}}
+      },
+      "Metadata" : {
+        "AWS::CloudFormation::Init" : {
+          "configSets" : {"config" : ["setup", "rename"]},
+          "setup" : {
+            "files" : {
+              "c:\\cfn\\scripts\\Rename-Computer.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Rename-Computer.ps1"}
+            }
+          },
+          "rename" : {
+            "commands" : {
+              "a-rename" : {
+                "command" : "powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Rename-Computer.ps1 -NewName AD1",
+                "waitAfterCompletion" : "forever"
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "AD2" : {
+      "DependsOn" : "AD1",      
+      "Type" : "AWS::EC2::Instance",
+      "Properties" : {
+        "ImageId" : { "Fn::FindInMap" : [ "WindowsAMI", { "Ref" : "AWS::Region" }, "64"]},
+        "InstanceType" : {"Ref" : "InstanceType"},
+        "Tags" : [{"Key" : "Name", "Value" : "AD2"}],
+        "BlockDeviceMappings" : [{"DeviceName" : "/dev/sda1","Ebs" : {"VolumeSize" : "60", "VolumeType" : "standard"}}],        
+        "KeyName" : {"Ref" : "KeyPair"}
+      }
+    },
+
+    "FS1" : {
+      "DependsOn" : "AD1",      
+      "Type" : "AWS::EC2::Instance",
+      "Properties" : {
+        "ImageId" : { "Fn::FindInMap" : [ "WindowsAMI", { "Ref" : "AWS::Region" }, "64"]},
+        "InstanceType" : {"Ref" : "InstanceType"},
+        "Tags" : [{"Key" : "Name", "Value" : "FS1"}],
+        "BlockDeviceMappings" : [{"DeviceName" : "/dev/sda1","Ebs" : {"VolumeSize" : "40", "VolumeType" : "standard"}}],        
+        "KeyName" : {"Ref" : "KeyPair"}
+      }
+    },
+
+    "FS2" : {
+      "DependsOn" : "FS1",
+      "Type" : "AWS::EC2::Instance",
+      "Properties" : {
+        "ImageId" : { "Fn::FindInMap" : [ "WindowsAMI", { "Ref" : "AWS::Region" }, "64"]},
+        "InstanceType" : {"Ref" : "InstanceType"},
+        "Tags" : [{"Key" : "Name", "Value" : "FS2"}],
+        "BlockDeviceMappings" : [{"DeviceName" : "/dev/sda1","Ebs" : {"VolumeSize" : "40", "VolumeType" : "standard"}}],        
+        "KeyName" : {"Ref" : "KeyPair"}
+      }
+    },
+
+    "Sync" : {
+      "DependsOn" : "AD1",
+      "Type" : "AWS::EC2::Instance",
+      "Properties" : {
+        "ImageId" : { "Fn::FindInMap" : [ "WindowsAMI", { "Ref" : "AWS::Region" }, "64"]},
+        "InstanceType" : {"Ref" : "InstanceType"},
+        "Tags" : [{"Key" : "Name", "Value" : "Sync"}],
+        "BlockDeviceMappings" : [{"DeviceName" : "/dev/sda1","Ebs" : {"VolumeSize" : "40", "VolumeType" : "standard"}}],        
+        "KeyName" : {"Ref" : "KeyPair"}
+      }
+    },
+
+    "PFS1" : {
+      "DependsOn" : "FS1",
+      "Type" : "AWS::EC2::Instance",
+      "Properties" : {
+        "ImageId" : { "Fn::FindInMap" : [ "WindowsAMI", { "Ref" : "AWS::Region" }, "64"]},
+        "InstanceType" : {"Ref" : "InstanceType"},
+        "Tags" : [{"Key" : "Name", "Value" : "PFS1"}],
+        "BlockDeviceMappings" : [{"DeviceName" : "/dev/sda1","Ebs" : {"VolumeSize" : "40", "VolumeType" : "standard"}}],        
+        "KeyName" : {"Ref" : "KeyPair"}
+      }
+    },
+
+    "PFS2" : {
+      "DependsOn" : "FS1",
+      "Type" : "AWS::EC2::Instance",
+      "Properties" : {
+        "ImageId" : { "Fn::FindInMap" : [ "WindowsAMI", { "Ref" : "AWS::Region" }, "64"]},
+        "InstanceType" : {"Ref" : "InstanceType"},
+        "Tags" : [{"Key" : "Name", "Value" : "PFS2"}],
+        "BlockDeviceMappings" : [{"DeviceName" : "/dev/sda1","Ebs" : {"VolumeSize" : "40", "VolumeType" : "standard"}}],        
+        "KeyName" : {"Ref" : "KeyPair"}
+      }
+    },
+
+    "NAT1" : {
+      "Type" : "AWS::EC2::Instance",
+      "Properties" : {
+        "ImageId" : { "Fn::FindInMap" : [ "LinuxAMI", { "Ref" : "AWS::Region" }, "64"]},
+        "InstanceType" : {"Ref" : "InstanceType"},
+        "Tags" : [{"Key" : "Name", "Value" : "NAT1"}],
+        "KeyName" : {"Ref" : "KeyPair"},
+        "SourceDestCheck" : "false"
+      }
+    }
+
+  },
+
+  "Outputs" : {
+  }
+}
