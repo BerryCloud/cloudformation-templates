@@ -58,9 +58,9 @@
           "configSets" : {"config" : ["setup", "rename","installADDS"]},
           "setup" : {
             "files" : {
-              "c:\\cfn\\scripts\\Rename-Computer.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Rename-Computer.ps1"},
-              "c:\\cfn\\scripts\\Install-ADDS.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Install-ADDS.ps1"},
-              "c:\\cfn\\scripts\\Configure-ADDS.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Install-ADDS.ps1"}              
+              "c:\\cfn\\scripts\\Rename-Computer.ps1" : {"source" : "https://github.com/BerryCloud/cloudformation-templates/blob/master/active-directory/active-directory-federation-services/Rename-Computer.ps1"},
+              "c:\\cfn\\scripts\\Install-ADDS.ps1" : {"source" : "https://github.com/BerryCloud/cloudformation-templates/blob/master/active-directory/active-directory-federation-services/Install-ADDS.ps1"},
+              "c:\\cfn\\scripts\\Configure-ADDS.ps1" : {"source" : "https://github.com/BerryCloud/cloudformation-templates/blob/master/active-directory/active-directory-federation-services/Configure-ADDS.ps1"}              
             }
           },
           "rename" : {
