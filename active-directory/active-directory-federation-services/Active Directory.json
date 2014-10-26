@@ -83,7 +83,7 @@
                 "waitAfterCompletion" : "forever"
               },
               "c-add-user" : {
-                "command" : {"powershell.exe -ExecutionPolicy RemoteSigned c:\\cfn\\scripts\\Add-User.ps1 -DomainAdminUser DomainAdministrator -DomainAdminPassword hello123!"},
+                "command" : "powershell.exe -ExecutionPolicy RemoteSigned c:\\cfn\\scripts\\Add-User.ps1 -DomainAdminUser DomainAdministrator -DomainAdminPassword hello123!",
                 "waitAfterCompletion" : 0
               }
             }
