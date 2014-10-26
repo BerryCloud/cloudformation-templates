@@ -60,7 +60,8 @@
             "files" : {
               "c:\\cfn\\scripts\\Rename-Computer.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Rename-Computer.ps1"},
               "c:\\cfn\\scripts\\Install-ADDS.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Install-ADDS.ps1"},
-              "c:\\cfn\\scripts\\Configure-ADDS.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Configure-ADDS.ps1"}              
+              "c:\\cfn\\scripts\\Configure-ADDS.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Configure-ADDS.ps1"},
+              "c:\\cfn\\scripts\\Add-User.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Add-User.ps1"}
             }
           },
           "rename" : {
@@ -80,7 +81,11 @@
               "b-configure-ADDS" : {
                 "command" : "powershell.exe -ExecutionPolicy RemoteSigned c:\\cfn\\scripts\\Configure-ADDS.ps1 -DomainName internal.berrycloud.co.uk -DomainNetbiosName berrycloud -SafeModeAdministratorPassword hello123!",
                 "waitAfterCompletion" : "forever"
-              }              
+              },
+              "c-add-user" : {
+                "command" : {"powershell.exe -ExecutionPolicy RemoteSigned c:\\cfn\\scripts\\Add-User.ps1 -DomainAdminUser DomainAdministrator -DomainAdminPassword hello123!"},
+                "waitAfterCompletion" : 0
+              }
             }
           }
         }
