@@ -55,10 +55,12 @@
       },
       "Metadata" : {
         "AWS::CloudFormation::Init" : {
-          "configSets" : {"config" : ["setup", "rename"]},
+          "configSets" : {"config" : ["setup", "rename","installADDS"]},
           "setup" : {
             "files" : {
-              "c:\\cfn\\scripts\\Rename-Computer.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Rename-Computer.ps1"}
+              "c:\\cfn\\scripts\\Rename-Computer.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Rename-Computer.ps1"},
+              "c:\\cfn\\scripts\\Install-ADDS.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Install-ADDS.ps1"},
+              "c:\\cfn\\scripts\\Configure-ADDS.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Install-ADDS.ps1"}              
             }
           },
           "rename" : {
@@ -67,6 +69,18 @@
                 "command" : "powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Rename-Computer.ps1 -NewName AD1",
                 "waitAfterCompletion" : "forever"
               }
+            }
+          },
+          "installADDS" : {
+            "commands" : {
+              "a-install-ADDS" : {
+                "command" : "powershell.exe -ExecutionPolicy RemoteSigned c:\\cfn\\scripts\\Install-ADDS.ps1",
+                "waitAfterCompletion" : 0
+              },
+              "b-configure-ADDS" : {
+                "command" : "powershell.exe -ExecutionPolicy RemoteSigned c:\\cfn\\scripts\\Configure-ADDS.ps1 -DomainName internal.berrycloud.co.uk -DomainNetbiosName berrycloud -SafeModeAdministratorPassword hello123!",
+                "waitAfterCompletion" : "forever"
+              }              
             }
           }
         }
@@ -81,7 +95,26 @@
         "InstanceType" : {"Ref" : "InstanceType"},
         "Tags" : [{"Key" : "Name", "Value" : "AD2"}],
         "BlockDeviceMappings" : [{"DeviceName" : "/dev/sda1","Ebs" : {"VolumeSize" : "60", "VolumeType" : "standard"}}],        
-        "KeyName" : {"Ref" : "KeyPair"}
+        "KeyName" : {"Ref" : "KeyPair"},
+        "UserData" : {"Fn::Base64" : {"Fn::Join" : ["",["<script>\n","cfn-init.exe -v -c config -s ",{"Ref" : "AWS::StackId"}," -r AD2"," --region ",{"Ref" : "AWS::Region"},"\n","</script>\n"]]}}
+      },
+      "Metadata" : {
+        "AWS::CloudFormation::Init" : {
+          "configSets" : {"config" : ["setup", "rename"]},
+          "setup" : {
+            "files" : {
+              "c:\\cfn\\scripts\\Rename-Computer.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Rename-Computer.ps1"}
+            }
+          },
+          "rename" : {
+            "commands" : {
+              "a-rename" : {
+                "command" : "powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Rename-Computer.ps1 -NewName AD2",
+                "waitAfterCompletion" : "forever"
+              }
+            }
+          }
+        }
       }
     },
 
@@ -93,8 +126,27 @@
         "InstanceType" : {"Ref" : "InstanceType"},
         "Tags" : [{"Key" : "Name", "Value" : "FS1"}],
         "BlockDeviceMappings" : [{"DeviceName" : "/dev/sda1","Ebs" : {"VolumeSize" : "40", "VolumeType" : "standard"}}],        
-        "KeyName" : {"Ref" : "KeyPair"}
-      }
+        "KeyName" : {"Ref" : "KeyPair"},
+        "UserData" : {"Fn::Base64" : {"Fn::Join" : ["",["<script>\n","cfn-init.exe -v -c config -s ",{"Ref" : "AWS::StackId"}," -r FS1"," --region ",{"Ref" : "AWS::Region"},"\n","</script>\n"]]}}        
+      },
+      "Metadata" : {
+        "AWS::CloudFormation::Init" : {
+          "configSets" : {"config" : ["setup", "rename"]},
+          "setup" : {
+            "files" : {
+              "c:\\cfn\\scripts\\Rename-Computer.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Rename-Computer.ps1"}
+            }
+          },
+          "rename" : {
+            "commands" : {
+              "a-rename" : {
+                "command" : "powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Rename-Computer.ps1 -NewName FS1",
+                "waitAfterCompletion" : "forever"
+              }
+            }
+          }
+        }
+      }      
     },
 
     "FS2" : {
@@ -105,7 +157,26 @@
         "InstanceType" : {"Ref" : "InstanceType"},
         "Tags" : [{"Key" : "Name", "Value" : "FS2"}],
         "BlockDeviceMappings" : [{"DeviceName" : "/dev/sda1","Ebs" : {"VolumeSize" : "40", "VolumeType" : "standard"}}],        
-        "KeyName" : {"Ref" : "KeyPair"}
+        "KeyName" : {"Ref" : "KeyPair"},
+        "UserData" : {"Fn::Base64" : {"Fn::Join" : ["",["<script>\n","cfn-init.exe -v -c config -s ",{"Ref" : "AWS::StackId"}," -r FS2"," --region ",{"Ref" : "AWS::Region"},"\n","</script>\n"]]}}
+      },
+      "Metadata" : {
+        "AWS::CloudFormation::Init" : {
+          "configSets" : {"config" : ["setup", "rename"]},
+          "setup" : {
+            "files" : {
+              "c:\\cfn\\scripts\\Rename-Computer.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Rename-Computer.ps1"}
+            }
+          },
+          "rename" : {
+            "commands" : {
+              "a-rename" : {
+                "command" : "powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Rename-Computer.ps1 -NewName FS2",
+                "waitAfterCompletion" : "forever"
+              }
+            }
+          }
+        }
       }
     },
 
@@ -117,8 +188,27 @@
         "InstanceType" : {"Ref" : "InstanceType"},
         "Tags" : [{"Key" : "Name", "Value" : "Sync"}],
         "BlockDeviceMappings" : [{"DeviceName" : "/dev/sda1","Ebs" : {"VolumeSize" : "40", "VolumeType" : "standard"}}],        
-        "KeyName" : {"Ref" : "KeyPair"}
-      }
+        "KeyName" : {"Ref" : "KeyPair"},
+        "UserData" : {"Fn::Base64" : {"Fn::Join" : ["",["<script>\n","cfn-init.exe -v -c config -s ",{"Ref" : "AWS::StackId"}," -r Sync"," --region ",{"Ref" : "AWS::Region"},"\n","</script>\n"]]}}        
+      },
+      "Metadata" : {
+        "AWS::CloudFormation::Init" : {
+          "configSets" : {"config" : ["setup", "rename"]},
+          "setup" : {
+            "files" : {
+              "c:\\cfn\\scripts\\Rename-Computer.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Rename-Computer.ps1"}
+            }
+          },
+          "rename" : {
+            "commands" : {
+              "a-rename" : {
+                "command" : "powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Rename-Computer.ps1 -NewName Sync",
+                "waitAfterCompletion" : "forever"
+              }
+            }
+          }
+        }
+      }      
     },
 
     "PFS1" : {
@@ -129,8 +219,27 @@
         "InstanceType" : {"Ref" : "InstanceType"},
         "Tags" : [{"Key" : "Name", "Value" : "PFS1"}],
         "BlockDeviceMappings" : [{"DeviceName" : "/dev/sda1","Ebs" : {"VolumeSize" : "40", "VolumeType" : "standard"}}],        
-        "KeyName" : {"Ref" : "KeyPair"}
-      }
+        "KeyName" : {"Ref" : "KeyPair"},
+        "UserData" : {"Fn::Base64" : {"Fn::Join" : ["",["<script>\n","cfn-init.exe -v -c config -s ",{"Ref" : "AWS::StackId"}," -r PFS1"," --region ",{"Ref" : "AWS::Region"},"\n","</script>\n"]]}}        
+      },
+      "Metadata" : {
+        "AWS::CloudFormation::Init" : {
+          "configSets" : {"config" : ["setup", "rename"]},
+          "setup" : {
+            "files" : {
+              "c:\\cfn\\scripts\\Rename-Computer.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Rename-Computer.ps1"}
+            }
+          },
+          "rename" : {
+            "commands" : {
+              "a-rename" : {
+                "command" : "powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Rename-Computer.ps1 -NewName PFS1",
+                "waitAfterCompletion" : "forever"
+              }
+            }
+          }
+        }
+      }      
     },
 
     "PFS2" : {
@@ -141,8 +250,27 @@
         "InstanceType" : {"Ref" : "InstanceType"},
         "Tags" : [{"Key" : "Name", "Value" : "PFS2"}],
         "BlockDeviceMappings" : [{"DeviceName" : "/dev/sda1","Ebs" : {"VolumeSize" : "40", "VolumeType" : "standard"}}],        
-        "KeyName" : {"Ref" : "KeyPair"}
-      }
+        "KeyName" : {"Ref" : "KeyPair"},
+        "UserData" : {"Fn::Base64" : {"Fn::Join" : ["",["<script>\n","cfn-init.exe -v -c config -s ",{"Ref" : "AWS::StackId"}," -r PFS2"," --region ",{"Ref" : "AWS::Region"},"\n","</script>\n"]]}}        
+      },
+      "Metadata" : {
+        "AWS::CloudFormation::Init" : {
+          "configSets" : {"config" : ["setup", "rename"]},
+          "setup" : {
+            "files" : {
+              "c:\\cfn\\scripts\\Rename-Computer.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Rename-Computer.ps1"}
+            }
+          },
+          "rename" : {
+            "commands" : {
+              "a-rename" : {
+                "command" : "powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Rename-Computer.ps1 -NewName PFS2",
+                "waitAfterCompletion" : "forever"
+              }
+            }
+          }
+        }
+      }      
     },
 
     "NAT1" : {
