@@ -15,6 +15,71 @@
     "KeyPair" : {
       "Description" : "Public/private key pairs allow you to securely connect to your instance after it launches",
       "Type" : "String"
+    },
+
+    "DomainDNSName" : {
+      "Description" : "Fully qualified domain name (FQDN) of the forest root domain e.g. example.com",
+      "Type"        : "String",
+      "Default"     : "internal.example.com",
+      "MinLength"   : "3",
+      "MaxLength"   : "25",
+      "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
+    },
+
+    "DomainNetBIOSName" : {
+      "Description" : "NetBIOS name of the domain (upto 15 characters) for users of earlier versions of Windows e.g. EXAMPLE",
+      "Type"        : "String",
+      "Default"     : "example",
+      "MinLength"   : "1",
+      "MaxLength"   : "15",
+      "AllowedPattern" : "[a-zA-Z0-9]+"
+    },
+
+    "PublicSubnetCIDR1" : {
+      "Description" : "CIDR Block for the Public Subnet located in AZ1",
+      "Type"        : "String",
+      "Default"     : "10.0.0.0/24",
+      "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
+    },
+
+    "PublicSubnetCIDR2" : {
+      "Description" : "CIDR Block for the Public Subnet located in AZ2",
+      "Type"        : "String",
+      "Default"     : "10.0.1.0/24",
+      "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
+    },
+
+    "PrivateSubnetCIDR1" : {
+      "Description" : "CIDR Block for Private Subnet 1 located in AZ1",
+      "Type"        : "String",
+      "Default"     : "10.0.2.0/24",
+      "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
+    },
+
+    "PrivateSubnetCIDR2" : {
+      "Description" : "CIDR Block for Private Subnet 2 located in AZ2",
+      "Type"        : "String",
+      "Default"     : "10.0.3.0/24",
+      "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
+    },
+
+    "VPCCIDR" : {
+      "Description" : "CIDR Block for the VPC",
+      "Type"        : "String",
+      "Default"     : "10.0.0.0/16",
+      "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
+    },
+
+    "AD1PrivateIp" : {
+      "Description" : "Fixed private IP for the first Active Directory server located in AZ1",
+      "Type"        : "String",
+      "Default"     : "10.0.2.10"
+    },
+
+    "AD2PrivateIp" : {
+      "Description" : "Fixed private IP for the second Active Directory serverr located in AZ2",
+      "Type"        : "String",
+      "Default"     : "10.0.3.10"
     }
 
   },
@@ -42,6 +107,198 @@
 
   "Resources" : {
 
+    "DhcpOptions" : {
+      "Type" : "AWS::EC2::DHCPOptions",
+      "Properties" : {
+        "DomainName" : {"Ref" : "DomainDNSName"},
+        "DomainNameServers" : ["AmazonProvidedDNS"],
+        "NtpServers" : [{"Ref" : "AD1PrivateIp"}, {"Ref" : "AD2PrivateIp"}],
+        "NetbiosNameServers" : [{"Ref" : "AD1PrivateIp"},{"Ref" : "AD2PrivateIp"}],
+        "NetbiosNodeType" : "2",
+        "Tags" : [{"Key" : "Name", "Value" : {"Ref" : "AWS::StackName"}},{ "Key" : "Domain","Value" : {"Ref" : "DomainDNSName"}}]}
+    },
+   
+    "VPC" : {
+      "Type" : "AWS::EC2::VPC",
+      "Properties" : {
+        "CidrBlock" : {"Ref" : "VPCCIDR"},
+        "Tags" : [{"Key" : "Name", "Value" : {"Ref" : "AWS::StackName"}}, {"Key" : "Application", "Value" : {"Ref" : "AWS::StackName"}}, {"Key" : "Network", "Value" : "Public"}]
+      }
+    },
+   
+    "VPCDHCPOptionsAssociation" : {
+      "Type" : "AWS::EC2::VPCDHCPOptionsAssociation",
+      "Properties" : {
+        "VpcId" : {"Ref" : "VPC"},
+        "DhcpOptionsId" : {"Ref" : "DhcpOptions"}
+      }
+    },
+   
+    "PublicSubnet1" : {
+      "Type" : "AWS::EC2::Subnet",
+      "Properties" : {
+        "VpcId" : {"Ref" : "VPC"},
+        "CidrBlock" : {"Ref" : "PublicSubnetCIDR1"},
+        "AvailabilityZone" : {"Fn::Select" : [0,{"Fn::GetAZs" : ""}]},
+        "Tags" : [{"Key" : "Name", "Value" : "Public subnet"}, {"Key" : "Application", "Value" : {"Ref" : "AWS::StackName"}}, {"Key" : "Network", "Value" : "Public"}, {"Key" : "Role", "Value" : "Public 1 Subnet"}]
+      }
+    },
+   
+    "PublicSubnet2" : {
+      "Type" : "AWS::EC2::Subnet",
+      "Properties" : {
+        "VpcId" : {"Ref" : "VPC"},"CidrBlock" : {"Ref" : "PublicSubnetCIDR2"},
+        "AvailabilityZone" : {"Fn::Select" : [1,{"Fn::GetAZs" : ""}]},
+        "Tags" : [{"Key" : "Name", "Value" : "Public subnet"}, {"Key" : "Application", "Value" : {"Ref" : "AWS::StackName"}},{"Key" : "Network","Value" : "Public"},{"Key" : "Role", "Value" : "Public 2 Subnet"}]
+      }
+    },
+   
+    "PrivateSubnet1" : {
+      "Type" : "AWS::EC2::Subnet",
+      "Properties" : {
+        "VpcId" : {"Ref" : "VPC"},
+        "CidrBlock" : {"Ref" : "PrivateSubnetCIDR1"},
+        "AvailabilityZone" : {"Fn::Select" : [0,{"Fn::GetAZs" : ""}]},
+        "Tags" : [{"Key" : "Name", "Value" : "Private subnet"}, {"Key" : "Application","Value" : {"Ref" : "AWS::StackName"}},{"Key" : "Network","Value" : "Private"},{"Key" : "Role","Value" : "AD1 Subnet"}]
+      }
+    },
+   
+    "PrivateSubnet2" : {
+        "Type" : "AWS::EC2::Subnet",
+        "Properties" : {
+          "VpcId" : {"Ref" : "VPC"},"CidrBlock" : {"Ref" : "PrivateSubnetCIDR2"},
+          "AvailabilityZone" : {"Fn::Select" : [1,{"Fn::GetAZs" : ""}]},
+          "Tags" : [{"Key" : "Name", "Value" : "Private subnet"}, {"Key" : "Application","Value" : {"Ref" : "AWS::StackName"}}, {"Key" : "Network","Value" : "Private"}, {"Key" : "Role","Value" : "AD2 Subnet"}]
+        }
+    },
+   
+    "InternetGateway" : {
+      "Type" : "AWS::EC2::InternetGateway",
+      "Properties" : {
+        "Tags" : [{"Key" : "Name", "Value" : {"Ref" : "AWS::StackName"}}, {"Key" : "Application", "Value" : {"Ref" : "AWS::StackName"}},{"Key" : "Network", "Value" : "Public"}]
+      }
+    },
+   
+    "AttachGateway" : {
+            "Type" : "AWS::EC2::VPCGatewayAttachment",
+            "Properties" : {
+                "VpcId" : {
+                    "Ref" : "VPC"
+                },
+                "InternetGatewayId" : {
+                    "Ref" : "InternetGateway"
+                }
+            }
+    },
+   
+    "PublicRouteTable" : {
+        "Type" : "AWS::EC2::RouteTable",
+        "Properties" : {
+          "VpcId" : {"Ref" : "VPC"},
+          "Tags"  : [{"Key" : "Name", "Value" : "Public Route Table"}, {"Key" : "Application", "Value" : {"Ref" : "AWS::StackName"}}, {"Key" : "Network", "Value" : "Public"}]
+        }
+    },
+   
+    "PublicRoute" : {
+            "Type" : "AWS::EC2::Route",
+            "Properties" : {
+                "RouteTableId" : {
+                    "Ref" : "PublicRouteTable"
+                },
+                "DestinationCidrBlock" : "0.0.0.0/0",
+                "GatewayId"            : {
+                    "Ref" : "InternetGateway"
+                }
+            }
+    },
+   
+    "PublicSubnetRouteTableAssociation1" : {
+            "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties" : {
+                "SubnetId" : {
+                    "Ref" : "PublicSubnet1"
+                },
+                "RouteTableId" : {
+                    "Ref" : "PublicRouteTable"
+                }
+            }
+    },
+   
+    "PublicSubnetRouteTableAssociation2" : {
+            "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties" : {
+                "SubnetId" : {
+                    "Ref" : "PublicSubnet2"
+                },
+                "RouteTableId" : {
+                    "Ref" : "PublicRouteTable"
+                }
+            }
+    },
+   
+    "PrivateRouteTable" : {
+      "Type" : "AWS::EC2::RouteTable",
+      "Properties" : {
+        "VpcId" : {"Ref" : "VPC"},
+        "Tags"  : [{"Key" : "Name", "Value" : "Private Route Table"}, {"Key" : "Application","Value" : {"Ref" : "AWS::StackName"}}, {"Key" : "Network", "Value" : "AZ1 Private"}]
+      }
+    },
+   
+    "PrivateRoute" : {
+            "Type" : "AWS::EC2::Route",
+            "Properties" : {
+                "RouteTableId" : {
+                    "Ref" : "PrivateRouteTable"
+                },
+                "DestinationCidrBlock" : "0.0.0.0/0",
+                "InstanceId"           : {
+                    "Ref" : "NAT1"
+                }
+            }
+    },
+         
+    "PrivateSubnetRouteTableAssociation1" : {
+            "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties" : {
+                "SubnetId" : {
+                    "Ref" : "PrivateSubnet1"
+                },
+                "RouteTableId" : {
+                    "Ref" : "PrivateRouteTable"
+                }
+            }
+    },
+   
+    "PrivateSubnetRouteTableAssociation2" : {
+            "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties" : {
+                "SubnetId" : {
+                    "Ref" : "PrivateSubnet2"
+                },
+                "RouteTableId" : {
+                    "Ref" : "PrivateRouteTable"
+                }
+            }
+    },
+   
+    "PFS1EIP" : {
+      "Type" : "AWS::EC2::EIP",
+      "Properties" : {
+        "Domain" : "vpc",
+        "InstanceId" : {"Ref" : "PFS1"}
+      }
+    },
+   
+    "PFS2EIP" : {
+            "Type" : "AWS::EC2::EIP",
+            "Properties" : {
+                "Domain" : "vpc",
+                "InstanceId" : {
+                    "Ref" : "PFS2"
+                }
+            }
+    },
+
     "AD1" : {
       "DependsOn" : "NAT1",
       "Type" : "AWS::EC2::Instance",
@@ -51,6 +308,7 @@
         "Tags" : [{"Key" : "Name", "Value" : "AD1"}],
         "BlockDeviceMappings" : [{"DeviceName" : "/dev/sda1","Ebs" : {"VolumeSize" : "60", "VolumeType" : "standard"}}],
         "KeyName" : {"Ref" : "KeyPair"},
+        "SubnetId" : {"Ref" : "PrivateSubnet1"},        
         "UserData" : {"Fn::Base64" : {"Fn::Join" : ["",["<script>\n","cfn-init.exe -v -c config -s ",{"Ref" : "AWS::StackId"}," -r AD1"," --region ",{"Ref" : "AWS::Region"},"\n","</script>\n"]]}}
       },
       "Metadata" : {
@@ -101,15 +359,17 @@
         "Tags" : [{"Key" : "Name", "Value" : "AD2"}],
         "BlockDeviceMappings" : [{"DeviceName" : "/dev/sda1","Ebs" : {"VolumeSize" : "60", "VolumeType" : "standard"}}],        
         "KeyName" : {"Ref" : "KeyPair"},
+        "SubnetId" : {"Ref" : "PrivateSubnet2"},
         "UserData" : {"Fn::Base64" : {"Fn::Join" : ["",["<script>\n","cfn-init.exe -v -c config -s ",{"Ref" : "AWS::StackId"}," -r AD2"," --region ",{"Ref" : "AWS::Region"},"\n","</script>\n"]]}}
       },
       "Metadata" : {
         "AWS::CloudFormation::Init" : {
-          "configSets" : {"config" : ["setup", "rename"]},
+          "configSets" : {"config" : ["setup", "rename", "join"]},
           "setup" : {
             "files" : {
               "c:\\cfn\\scripts\\Rename-Computer.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Rename-Computer.ps1"},
-              "c:\\cfn\\scripts\\Install-ADDS.ps1" : {"source" : "https://github.com/BerryCloud/cloudformation-templates/blob/master/active-directory/active-directory-federation-services/Install-ADDS.ps1"}
+              "c:\\cfn\\scripts\\Join-Domain.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Join-Domain.ps1"},
+              "c:\\cfn\\scripts\\Install-ADDS.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Install-ADDS.ps1"}
             }
           },
           "rename" : {
@@ -120,14 +380,20 @@
               }
             }
           },
-          "installADDS" : {
+          "join" : {
             "commands" : {
-              "a-install-ADDS" : {
-                "command" : "powershell.exe -ExecutionPolicy RemoteSigned c:\\cfn\\scripts\\Install-ADDS.ps1",
-                "waitAfterCompletion" : 0
-              },
-              "b-configure-ADDS" : {
-              }              
+              "a-join-domain" : {
+                "command" : "powershell.exe -ExecutionPolicy RemoteSigned c:\\cfn\\scripts\\Join-Domain.ps1 -DomainName internal.berrycloud.co.uk -DomainNetBIOSName berrycloud -DomainAdminUser DomainAdministrator -DomainAdminPassword hello123!",
+                "waitAfterCompletion" : "forever"
+              }
+            },
+            "installADDS" : {
+              "commands" : {
+                "b-install-ADDS" : {
+                  "command" : "powershell.exe -ExecutionPolicy RemoteSigned c:\\cfn\\scripts\\Install-ADDS.ps1",
+                  "waitAfterCompletion" : 0
+                }
+              }
             }
           }
         }
@@ -143,20 +409,30 @@
         "Tags" : [{"Key" : "Name", "Value" : "FS1"}],
         "BlockDeviceMappings" : [{"DeviceName" : "/dev/sda1","Ebs" : {"VolumeSize" : "40", "VolumeType" : "standard"}}],        
         "KeyName" : {"Ref" : "KeyPair"},
+        "SubnetId" : {"Ref" : "PrivateSubnet1"},        
         "UserData" : {"Fn::Base64" : {"Fn::Join" : ["",["<script>\n","cfn-init.exe -v -c config -s ",{"Ref" : "AWS::StackId"}," -r FS1"," --region ",{"Ref" : "AWS::Region"},"\n","</script>\n"]]}}        
       },
       "Metadata" : {
         "AWS::CloudFormation::Init" : {
-          "configSets" : {"config" : ["setup", "rename"]},
+          "configSets" : {"config" : ["setup", "rename", "join"]},
           "setup" : {
             "files" : {
-              "c:\\cfn\\scripts\\Rename-Computer.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Rename-Computer.ps1"}
+              "c:\\cfn\\scripts\\Rename-Computer.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Rename-Computer.ps1"},
+              "c:\\cfn\\scripts\\Join-Domain.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Join-Domain.ps1"}              
             }
           },
           "rename" : {
             "commands" : {
               "a-rename" : {
                 "command" : "powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Rename-Computer.ps1 -NewName FS1",
+                "waitAfterCompletion" : "forever"
+              }
+            }
+          },
+          "join" : {
+            "commands" : {
+              "a-join-domain" : {
+                "command" : "powershell.exe -ExecutionPolicy RemoteSigned c:\\cfn\\scripts\\Join-Domain.ps1 -DomainName internal.berrycloud.co.uk -DomainNetBIOSName berrycloud -DomainAdminUser DomainAdministrator -DomainAdminPassword hello123!",
                 "waitAfterCompletion" : "forever"
               }
             }
@@ -174,6 +450,7 @@
         "Tags" : [{"Key" : "Name", "Value" : "FS2"}],
         "BlockDeviceMappings" : [{"DeviceName" : "/dev/sda1","Ebs" : {"VolumeSize" : "40", "VolumeType" : "standard"}}],        
         "KeyName" : {"Ref" : "KeyPair"},
+        "SubnetId" : {"Ref" : "PrivateSubnet2"},        
         "UserData" : {"Fn::Base64" : {"Fn::Join" : ["",["<script>\n","cfn-init.exe -v -c config -s ",{"Ref" : "AWS::StackId"}," -r FS2"," --region ",{"Ref" : "AWS::Region"},"\n","</script>\n"]]}}
       },
       "Metadata" : {
@@ -205,6 +482,7 @@
         "Tags" : [{"Key" : "Name", "Value" : "Sync"}],
         "BlockDeviceMappings" : [{"DeviceName" : "/dev/sda1","Ebs" : {"VolumeSize" : "40", "VolumeType" : "standard"}}],        
         "KeyName" : {"Ref" : "KeyPair"},
+        "SubnetId" : {"Ref" : "PrivateSubnet2"},
         "UserData" : {"Fn::Base64" : {"Fn::Join" : ["",["<script>\n","cfn-init.exe -v -c config -s ",{"Ref" : "AWS::StackId"}," -r Sync"," --region ",{"Ref" : "AWS::Region"},"\n","</script>\n"]]}}        
       },
       "Metadata" : {
@@ -236,6 +514,7 @@
         "Tags" : [{"Key" : "Name", "Value" : "PFS1"}],
         "BlockDeviceMappings" : [{"DeviceName" : "/dev/sda1","Ebs" : {"VolumeSize" : "40", "VolumeType" : "standard"}}],        
         "KeyName" : {"Ref" : "KeyPair"},
+        "SubnetId" : {"Ref" : "PublicSubnet1"},
         "UserData" : {"Fn::Base64" : {"Fn::Join" : ["",["<script>\n","cfn-init.exe -v -c config -s ",{"Ref" : "AWS::StackId"}," -r PFS1"," --region ",{"Ref" : "AWS::Region"},"\n","</script>\n"]]}}        
       },
       "Metadata" : {
@@ -267,6 +546,7 @@
         "Tags" : [{"Key" : "Name", "Value" : "PFS2"}],
         "BlockDeviceMappings" : [{"DeviceName" : "/dev/sda1","Ebs" : {"VolumeSize" : "40", "VolumeType" : "standard"}}],        
         "KeyName" : {"Ref" : "KeyPair"},
+        "SubnetId" : {"Ref" : "PublicSubnet2"},
         "UserData" : {"Fn::Base64" : {"Fn::Join" : ["",["<script>\n","cfn-init.exe -v -c config -s ",{"Ref" : "AWS::StackId"}," -r PFS2"," --region ",{"Ref" : "AWS::Region"},"\n","</script>\n"]]}}        
       },
       "Metadata" : {
@@ -296,6 +576,7 @@
         "InstanceType" : {"Ref" : "InstanceType"},
         "Tags" : [{"Key" : "Name", "Value" : "NAT1"}],
         "KeyName" : {"Ref" : "KeyPair"},
+        "SubnetId" : {"Ref" : "PrivateSubnet1"},
         "SourceDestCheck" : "false"
       }
     }
