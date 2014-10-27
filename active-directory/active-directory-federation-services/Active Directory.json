@@ -87,10 +87,10 @@
   "Mappings" : {
 
     "WindowsAMI"    : {
-      "us-east-1" : {"64" : "ami-904be6f8"},
-      "us-west-2" : {"64" : "ami-d38dcce3"},
-      "us-west-1" : {"64" : "ami-09626b4c"},
-      "eu-west-1" : {"64" : "ami-d02386a7"}
+      "us-east-1" : {"64" : "ami-ba13abd2"},
+      "us-west-2" : {"64" : "ami-21f0bc11"},
+      "us-west-1" : {"64" : "ami-df43569a"},
+      "eu-west-1" : {"64" : "ami-d4228ea3"}
     },
 
     "LinuxAMI"  : {
@@ -281,20 +281,20 @@
             }
     },
    
-    "PFS1EIP" : {
+    "WAP1EIP" : {
       "Type" : "AWS::EC2::EIP",
       "Properties" : {
         "Domain" : "vpc",
-        "InstanceId" : {"Ref" : "PFS1"}
+        "InstanceId" : {"Ref" : "WAP1"}
       }
     },
    
-    "PFS2EIP" : {
+    "WAP2EIP" : {
             "Type" : "AWS::EC2::EIP",
             "Properties" : {
                 "Domain" : "vpc",
                 "InstanceId" : {
-                    "Ref" : "PFS2"
+                    "Ref" : "WAP2"
                 }
             }
     },
@@ -308,6 +308,7 @@
         "Tags" : [{"Key" : "Name", "Value" : "AD1"}],
         "BlockDeviceMappings" : [{"DeviceName" : "/dev/sda1","Ebs" : {"VolumeSize" : "60", "VolumeType" : "standard"}}],
         "KeyName" : {"Ref" : "KeyPair"},
+        "SecurityGroupIds" : [{"Ref" : "DomainMemberSecurityGroup"}],
         "SubnetId" : {"Ref" : "PrivateSubnet1"},        
         "UserData" : {"Fn::Base64" : {"Fn::Join" : ["",["<script>\n","cfn-init.exe -v -c config -s ",{"Ref" : "AWS::StackId"}," -r AD1"," --region ",{"Ref" : "AWS::Region"},"\n","</script>\n"]]}}
       },
@@ -359,6 +360,7 @@
         "Tags" : [{"Key" : "Name", "Value" : "AD2"}],
         "BlockDeviceMappings" : [{"DeviceName" : "/dev/sda1","Ebs" : {"VolumeSize" : "60", "VolumeType" : "standard"}}],        
         "KeyName" : {"Ref" : "KeyPair"},
+        "SecurityGroupIds" : [{"Ref" : "DomainMemberSecurityGroup"}],
         "SubnetId" : {"Ref" : "PrivateSubnet2"},
         "UserData" : {"Fn::Base64" : {"Fn::Join" : ["",["<script>\n","cfn-init.exe -v -c config -s ",{"Ref" : "AWS::StackId"}," -r AD2"," --region ",{"Ref" : "AWS::Region"},"\n","</script>\n"]]}}
       },
@@ -400,17 +402,18 @@
       }
     },
 
-    "FS1" : {
+    "ADFS1" : {
       "DependsOn" : "AD1",      
       "Type" : "AWS::EC2::Instance",
       "Properties" : {
         "ImageId" : { "Fn::FindInMap" : [ "WindowsAMI", { "Ref" : "AWS::Region" }, "64"]},
         "InstanceType" : {"Ref" : "InstanceType"},
-        "Tags" : [{"Key" : "Name", "Value" : "FS1"}],
+        "Tags" : [{"Key" : "Name", "Value" : "ADFS1"}],
         "BlockDeviceMappings" : [{"DeviceName" : "/dev/sda1","Ebs" : {"VolumeSize" : "40", "VolumeType" : "standard"}}],        
         "KeyName" : {"Ref" : "KeyPair"},
+        "SecurityGroupIds" : [{"Ref" : "DomainMemberSecurityGroup"},{"Ref" : "ADFSSecurityGroup"}],
         "SubnetId" : {"Ref" : "PrivateSubnet1"},        
-        "UserData" : {"Fn::Base64" : {"Fn::Join" : ["",["<script>\n","cfn-init.exe -v -c config -s ",{"Ref" : "AWS::StackId"}," -r FS1"," --region ",{"Ref" : "AWS::Region"},"\n","</script>\n"]]}}        
+        "UserData" : {"Fn::Base64" : {"Fn::Join" : ["",["<script>\n","cfn-init.exe -v -c config -s ",{"Ref" : "AWS::StackId"}," -r ADFS1"," --region ",{"Ref" : "AWS::Region"},"\n","</script>\n"]]}}        
       },
       "Metadata" : {
         "AWS::CloudFormation::Init" : {
@@ -424,7 +427,7 @@
           "rename" : {
             "commands" : {
               "a-rename" : {
-                "command" : "powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Rename-Computer.ps1 -NewName FS1",
+                "command" : "powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Rename-Computer.ps1 -NewName ADFS1",
                 "waitAfterCompletion" : "forever"
               }
             }
@@ -441,17 +444,18 @@
       }      
     },
 
-    "FS2" : {
-      "DependsOn" : "FS1",
+    "ADFS2" : {
+      "DependsOn" : "ADFS1",
       "Type" : "AWS::EC2::Instance",
       "Properties" : {
         "ImageId" : { "Fn::FindInMap" : [ "WindowsAMI", { "Ref" : "AWS::Region" }, "64"]},
         "InstanceType" : {"Ref" : "InstanceType"},
-        "Tags" : [{"Key" : "Name", "Value" : "FS2"}],
+        "Tags" : [{"Key" : "Name", "Value" : "ADFS2"}],
         "BlockDeviceMappings" : [{"DeviceName" : "/dev/sda1","Ebs" : {"VolumeSize" : "40", "VolumeType" : "standard"}}],        
         "KeyName" : {"Ref" : "KeyPair"},
+        "SecurityGroupIds" : [{"Ref" : "DomainMemberSecurityGroup"},{"Ref" : "ADFSSecurityGroup"}],
         "SubnetId" : {"Ref" : "PrivateSubnet2"},        
-        "UserData" : {"Fn::Base64" : {"Fn::Join" : ["",["<script>\n","cfn-init.exe -v -c config -s ",{"Ref" : "AWS::StackId"}," -r FS2"," --region ",{"Ref" : "AWS::Region"},"\n","</script>\n"]]}}
+        "UserData" : {"Fn::Base64" : {"Fn::Join" : ["",["<script>\n","cfn-init.exe -v -c config -s ",{"Ref" : "AWS::StackId"}," -r ADFS2"," --region ",{"Ref" : "AWS::Region"},"\n","</script>\n"]]}}
       },
       "Metadata" : {
         "AWS::CloudFormation::Init" : {
@@ -464,7 +468,7 @@
           "rename" : {
             "commands" : {
               "a-rename" : {
-                "command" : "powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Rename-Computer.ps1 -NewName FS2",
+                "command" : "powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Rename-Computer.ps1 -NewName ADFS2",
                 "waitAfterCompletion" : "forever"
               }
             }
@@ -482,6 +486,7 @@
         "Tags" : [{"Key" : "Name", "Value" : "Sync"}],
         "BlockDeviceMappings" : [{"DeviceName" : "/dev/sda1","Ebs" : {"VolumeSize" : "40", "VolumeType" : "standard"}}],        
         "KeyName" : {"Ref" : "KeyPair"},
+        "SecurityGroupIds" : [{"Ref" : "DomainMemberSecurityGroup"}],
         "SubnetId" : {"Ref" : "PrivateSubnet2"},
         "UserData" : {"Fn::Base64" : {"Fn::Join" : ["",["<script>\n","cfn-init.exe -v -c config -s ",{"Ref" : "AWS::StackId"}," -r Sync"," --region ",{"Ref" : "AWS::Region"},"\n","</script>\n"]]}}        
       },
@@ -505,17 +510,18 @@
       }      
     },
 
-    "PFS1" : {
-      "DependsOn" : "FS1",
+    "WAP1" : {
+      "DependsOn" : "ADFS1",
       "Type" : "AWS::EC2::Instance",
       "Properties" : {
         "ImageId" : { "Fn::FindInMap" : [ "WindowsAMI", { "Ref" : "AWS::Region" }, "64"]},
         "InstanceType" : {"Ref" : "InstanceType"},
-        "Tags" : [{"Key" : "Name", "Value" : "PFS1"}],
+        "Tags" : [{"Key" : "Name", "Value" : "WAP1"}],
         "BlockDeviceMappings" : [{"DeviceName" : "/dev/sda1","Ebs" : {"VolumeSize" : "40", "VolumeType" : "standard"}}],        
         "KeyName" : {"Ref" : "KeyPair"},
+        "SecurityGroupIds" : [{"Ref" : "RDPSecurityGroup"}, {"Ref" : "WebServerSecurityGroup"}, {"Ref": "WAPSecurityGroup"}],
         "SubnetId" : {"Ref" : "PublicSubnet1"},
-        "UserData" : {"Fn::Base64" : {"Fn::Join" : ["",["<script>\n","cfn-init.exe -v -c config -s ",{"Ref" : "AWS::StackId"}," -r PFS1"," --region ",{"Ref" : "AWS::Region"},"\n","</script>\n"]]}}        
+        "UserData" : {"Fn::Base64" : {"Fn::Join" : ["",["<script>\n","cfn-init.exe -v -c config -s ",{"Ref" : "AWS::StackId"}," -r WAP1"," --region ",{"Ref" : "AWS::Region"},"\n","</script>\n"]]}}        
       },
       "Metadata" : {
         "AWS::CloudFormation::Init" : {
@@ -528,7 +534,7 @@
           "rename" : {
             "commands" : {
               "a-rename" : {
-                "command" : "powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Rename-Computer.ps1 -NewName PFS1",
+                "command" : "powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Rename-Computer.ps1 -NewName WAP1",
                 "waitAfterCompletion" : "forever"
               }
             }
@@ -537,17 +543,18 @@
       }      
     },
 
-    "PFS2" : {
-      "DependsOn" : "FS1",
+    "WAP2" : {
+      "DependsOn" : "ADFS1",
       "Type" : "AWS::EC2::Instance",
       "Properties" : {
         "ImageId" : { "Fn::FindInMap" : [ "WindowsAMI", { "Ref" : "AWS::Region" }, "64"]},
         "InstanceType" : {"Ref" : "InstanceType"},
-        "Tags" : [{"Key" : "Name", "Value" : "PFS2"}],
+        "Tags" : [{"Key" : "Name", "Value" : "WAP2"}],
         "BlockDeviceMappings" : [{"DeviceName" : "/dev/sda1","Ebs" : {"VolumeSize" : "40", "VolumeType" : "standard"}}],        
         "KeyName" : {"Ref" : "KeyPair"},
+        "SecurityGroupIds" : [{"Ref" : "RDPSecurityGroup"}, {"Ref" : "WebServerSecurityGroup"}, {"Ref": "WAPSecurityGroup"}],
         "SubnetId" : {"Ref" : "PublicSubnet2"},
-        "UserData" : {"Fn::Base64" : {"Fn::Join" : ["",["<script>\n","cfn-init.exe -v -c config -s ",{"Ref" : "AWS::StackId"}," -r PFS2"," --region ",{"Ref" : "AWS::Region"},"\n","</script>\n"]]}}        
+        "UserData" : {"Fn::Base64" : {"Fn::Join" : ["",["<script>\n","cfn-init.exe -v -c config -s ",{"Ref" : "AWS::StackId"}," -r WAP2"," --region ",{"Ref" : "AWS::Region"},"\n","</script>\n"]]}}        
       },
       "Metadata" : {
         "AWS::CloudFormation::Init" : {
@@ -560,7 +567,7 @@
           "rename" : {
             "commands" : {
               "a-rename" : {
-                "command" : "powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Rename-Computer.ps1 -NewName PFS2",
+                "command" : "powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Rename-Computer.ps1 -NewName WAP2",
                 "waitAfterCompletion" : "forever"
               }
             }
@@ -576,8 +583,164 @@
         "InstanceType" : {"Ref" : "InstanceType"},
         "Tags" : [{"Key" : "Name", "Value" : "NAT1"}],
         "KeyName" : {"Ref" : "KeyPair"},
-        "SubnetId" : {"Ref" : "PrivateSubnet1"},
+        "SecurityGroupIds" : [{"Ref" : "SSHSecurityGroup"}, {"Ref" : "NATSecurityGroup"}],
+        "SubnetId" : {"Ref" : "PublicSubnet1"},
         "SourceDestCheck" : "false"
+      }
+    },
+
+    "WebServerSecurityGroup" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "GroupDescription" : "Enable HTTP and HTTPS access from the Internet",
+        "VpcId" : {"Ref" : "VPC"},
+        "SecurityGroupIngress" : [{
+          "IpProtocol" : "tcp",
+          "FromPort"   : "80",
+          "ToPort"     : "80",
+          "CidrIp"     : "0.0.0.0/0"
+          },
+          {
+          "IpProtocol" : "tcp",
+          "FromPort"   : "443",
+          "ToPort"     : "443",
+          "CidrIp"     : "0.0.0.0/0"
+          }]
+      }
+    },
+
+    "RDPSecurityGroup" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "GroupDescription" : "Enable RDP access from the Internet",
+        "VpcId" : {"Ref" : "VPC"},
+        "SecurityGroupIngress" : [{
+          "IpProtocol" : "tcp",
+          "FromPort"   : "3389",
+          "ToPort"     : "3389",
+          "CidrIp"     : "0.0.0.0/0"
+          }]
+       }
+    },
+
+    "SSHSecurityGroup" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "GroupDescription" : "Enable SSH access from the Internet",
+        "VpcId" : {"Ref" : "VPC"},
+        "SecurityGroupIngress" : [{
+          "IpProtocol" : "tcp",
+          "FromPort"   : "22",
+          "ToPort"     : "22",
+          "CidrIp"     : "0.0.0.0/0"
+          }]
+      }
+    },
+
+    "WAPSecurityGroup" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "GroupDescription" : "Security Group for WAP Server",
+        "VpcId" : {"Ref" : "VPC"}
+      }
+    },
+
+    "NATSecurityGroup" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "GroupDescription" : "Enable access from Private Subnets",
+        "VpcId" : {"Ref" : "VPC"},
+        "SecurityGroupIngress" : [{
+          "IpProtocol" : "-1",
+          "FromPort"   : "1",
+          "ToPort"     : "65535",
+          "CidrIp"     : {"Ref" : "PrivateSubnetCIDR1"}
+          },
+          {
+            "IpProtocol" : "-1",
+            "FromPort"   : "1",
+            "ToPort"     : "65535",
+            "CidrIp"     : {"Ref" : "PrivateSubnetCIDR2"}
+          }]
+        }
+      },
+
+    "ADFSSecurityGroup" :{
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "GroupDescription" : "Enable access from the WAP Security Group",
+        "VpcId" : {"Ref" : "VPC"}
+      }
+    },
+
+    "ADFSSecurityGroupIngress1" : {
+      "Type" : "AWS::EC2::SecurityGroupIngress",
+      "Properties" : {
+        "IpProtocol" : "tcp",        
+        "FromPort" : "80",
+        "ToPort" : "80",
+        "SourceSecurityGroupId": {
+          "Fn::GetAtt": [
+            "WAPSecurityGroup",
+            "GroupId"
+          ]
+        },
+        "GroupId": {
+          "Fn::GetAtt": [
+            "ADFSSecurityGroup",
+            "GroupId"
+          ]
+        }
+      }
+    },
+
+    "ADFSSecurityGroupIngress2" : {
+      "Type" : "AWS::EC2::SecurityGroupIngress",
+      "Properties" : {
+        "IpProtocol" : "tcp",        
+        "FromPort" : "443",
+        "ToPort" : "443",
+        "SourceSecurityGroupId": {
+          "Fn::GetAtt": [
+            "WAPSecurityGroup",
+            "GroupId"
+          ]
+        },
+        "GroupId": {
+          "Fn::GetAtt": [
+            "ADFSSecurityGroup",
+            "GroupId"
+          ]
+        }
+      }
+    },
+
+    "DomainMemberSecurityGroup" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "GroupDescription" : "Allows ",
+        "VpcId" : {"Ref" : "VPC"}
+      }
+    },
+
+    "DomainMemberSecurityGroupIngress" : {
+      "Type" : "AWS::EC2::SecurityGroupIngress",
+      "Properties" : {
+        "IpProtocol" : "-1",        
+        "FromPort" : "1",
+        "ToPort" : "65535",
+        "SourceSecurityGroupId": {
+          "Fn::GetAtt": [
+            "DomainMemberSecurityGroup",
+            "GroupId"
+          ]
+        },
+        "GroupId": {
+          "Fn::GetAtt": [
+            "DomainMemberSecurityGroup",
+            "GroupId"
+          ]
+        }
       }
     }
 
