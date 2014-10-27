@@ -122,6 +122,8 @@
       "Type" : "AWS::EC2::VPC",
       "Properties" : {
         "CidrBlock" : {"Ref" : "VPCCIDR"},
+        "EnableDnsSupport" : true,
+        "EnableDnsHostnames" : true,
         "Tags" : [{"Key" : "Name", "Value" : {"Ref" : "AWS::StackName"}}, {"Key" : "Application", "Value" : {"Ref" : "AWS::StackName"}}, {"Key" : "Network", "Value" : "Public"}]
       }
     },
@@ -307,6 +309,7 @@
         "InstanceType" : {"Ref" : "InstanceType"},
         "Tags" : [{"Key" : "Name", "Value" : "AD1"}],
         "BlockDeviceMappings" : [{"DeviceName" : "/dev/sda1","Ebs" : {"VolumeSize" : "60", "VolumeType" : "standard"}}],
+        "PrivateIpAddress"    : {"Ref" : "AD1PrivateIp"},
         "KeyName" : {"Ref" : "KeyPair"},
         "SecurityGroupIds" : [{"Ref" : "DomainMemberSecurityGroup"}],
         "SubnetId" : {"Ref" : "PrivateSubnet1"},        
@@ -358,7 +361,8 @@
         "ImageId" : { "Fn::FindInMap" : [ "WindowsAMI", { "Ref" : "AWS::Region" }, "64"]},
         "InstanceType" : {"Ref" : "InstanceType"},
         "Tags" : [{"Key" : "Name", "Value" : "AD2"}],
-        "BlockDeviceMappings" : [{"DeviceName" : "/dev/sda1","Ebs" : {"VolumeSize" : "60", "VolumeType" : "standard"}}],        
+        "BlockDeviceMappings" : [{"DeviceName" : "/dev/sda1","Ebs" : {"VolumeSize" : "60", "VolumeType" : "standard"}}],
+        "PrivateIpAddress"    : {"Ref" : "AD2PrivateIp"},
         "KeyName" : {"Ref" : "KeyPair"},
         "SecurityGroupIds" : [{"Ref" : "DomainMemberSecurityGroup"}],
         "SubnetId" : {"Ref" : "PrivateSubnet2"},
@@ -582,9 +586,14 @@
         "ImageId" : { "Fn::FindInMap" : [ "LinuxAMI", { "Ref" : "AWS::Region" }, "64"]},
         "InstanceType" : {"Ref" : "InstanceType"},
         "Tags" : [{"Key" : "Name", "Value" : "NAT1"}],
+        "NetworkInterfaces" : [{
+          "GroupSet"                 : [{ "Ref" : "NATSecurityGroup" }],
+          "AssociatePublicIpAddress" : "true",
+          "DeviceIndex"              : "0",
+          "DeleteOnTermination"      : "true",
+          "SubnetId"                 : { "Ref" : "PublicSubnet1" }
+        }],
         "KeyName" : {"Ref" : "KeyPair"},
-        "SecurityGroupIds" : [{"Ref" : "SSHSecurityGroup"}, {"Ref" : "NATSecurityGroup"}],
-        "SubnetId" : {"Ref" : "PublicSubnet1"},
         "SourceDestCheck" : "false"
       }
     },
