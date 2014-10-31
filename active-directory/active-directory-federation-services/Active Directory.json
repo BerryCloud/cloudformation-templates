@@ -329,7 +329,11 @@
           },
           "rename" : {
             "commands" : {
-              "a-rename" : {
+              "a-configure-network" : {
+                "command" : "powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Configure-Network.ps1",
+                "waitAfterCompletion" : 30
+              },              
+              "b-rename" : {
                 "command" : "powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Rename-Computer.ps1 -NewName AD1",
                 "waitAfterCompletion" : "forever"
               }
@@ -383,7 +387,11 @@
           },
           "rename" : {
             "commands" : {
-              "a-rename" : {
+              "a-configure-network" : {
+                "command" : "powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Configure-Network.ps1 -Dns1 10.0.2.10",
+                "waitAfterCompletion" : 30
+              },                            
+              "b-rename" : {
                 "command" : "powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Rename-Computer.ps1 -NewName AD2",
                 "waitAfterCompletion" : "forever"
               }
@@ -434,10 +442,14 @@
           },
           "rename" : {
             "commands" : {
-              "a-rename" : {
+              "a-configure-network" : {
+                "command" : "powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Configure-Network.ps1 -Dns1 10.0.2.10 -Dns2 10.0.3.10",
+                "waitAfterCompletion" : 30
+              },                            
+              "b-rename" : {
                 "command" : "powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Rename-Computer.ps1 -NewName ADFS1",
                 "waitAfterCompletion" : "forever"
-              }
+              }   
             }
           },
           "join" : {
@@ -471,15 +483,19 @@
           "setup" : {
             "files" : {
               "c:\\cfn\\scripts\\Rename-Computer.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Rename-Computer.ps1"},
-              "c:\\cfn\\scripts\\Configure-Network.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Configure-Network.ps1"},
+              "c:\\cfn\\scripts\\Configure-Network.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Configure-Network.ps1"}
             }
           },
           "rename" : {
             "commands" : {
-              "a-rename" : {
+              "a-configure-network" : {
+                "command" : "powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Configure-Network.ps1 -Dns1 10.0.2.10 -Dns2 10.0.3.10",
+                "waitAfterCompletion" : 30
+              },              
+              "b-rename" : {
                 "command" : "powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Rename-Computer.ps1 -NewName ADFS2",
                 "waitAfterCompletion" : "forever"
-              }
+              }   
             }
           }
         }
@@ -510,14 +526,18 @@
           },
           "rename" : {
             "commands" : {
-              "a-rename" : {
+              "a-configure-network" : {
+                "command" : "powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Configure-Network.ps1 -Dns1 10.0.2.10 -Dns2 10.0.3.10",
+                "waitAfterCompletion" : 30
+              },                            
+              "b-rename" : {
                 "command" : "powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Rename-Computer.ps1 -NewName Sync",
                 "waitAfterCompletion" : "forever"
-              }
+              }   
             }
           }
         }
-      }      
+      }
     },
 
     "WAP1" : {
@@ -607,6 +627,7 @@
     "WebServerSecurityGroup" : {
       "Type" : "AWS::EC2::SecurityGroup",
       "Properties" : {
+        "Tags" : [{"Key" : "Name", "Value" : "Web Server"}],
         "GroupDescription" : "Enable HTTP and HTTPS access from the Internet",
         "VpcId" : {"Ref" : "VPC"},
         "SecurityGroupIngress" : [{
@@ -627,6 +648,7 @@
     "RDPSecurityGroup" : {
       "Type" : "AWS::EC2::SecurityGroup",
       "Properties" : {
+        "Tags" : [{"Key" : "Name", "Value" : "RDP"}],        
         "GroupDescription" : "Enable RDP access from the Internet",
         "VpcId" : {"Ref" : "VPC"},
         "SecurityGroupIngress" : [{
@@ -641,6 +663,7 @@
     "SSHSecurityGroup" : {
       "Type" : "AWS::EC2::SecurityGroup",
       "Properties" : {
+        "Tags" : [{"Key" : "Name", "Value" : "SSH"}],        
         "GroupDescription" : "Enable SSH access from the Internet",
         "VpcId" : {"Ref" : "VPC"},
         "SecurityGroupIngress" : [{
@@ -655,6 +678,7 @@
     "WAPSecurityGroup" : {
       "Type" : "AWS::EC2::SecurityGroup",
       "Properties" : {
+        "Tags" : [{"Key" : "Name", "Value" : "Web Application Proxy"}],        
         "GroupDescription" : "Security Group for WAP Server",
         "VpcId" : {"Ref" : "VPC"}
       }
@@ -663,6 +687,7 @@
     "NATSecurityGroup" : {
       "Type" : "AWS::EC2::SecurityGroup",
       "Properties" : {
+        "Tags" : [{"Key" : "Name", "Value" : "Network Address Translation"}],        
         "GroupDescription" : "Enable access from Private Subnets",
         "VpcId" : {"Ref" : "VPC"},
         "SecurityGroupIngress" : [{
@@ -683,6 +708,7 @@
     "ADFSSecurityGroup" :{
       "Type" : "AWS::EC2::SecurityGroup",
       "Properties" : {
+        "Tags" : [{"Key" : "Name", "Value" : "Active Directory Federated Services"}],        
         "GroupDescription" : "Enable access from the WAP Security Group",
         "VpcId" : {"Ref" : "VPC"}
       }
@@ -733,6 +759,7 @@
     "DomainMemberSecurityGroup" : {
       "Type" : "AWS::EC2::SecurityGroup",
       "Properties" : {
+        "Tags" : [{"Key" : "Name", "Value" : "Domain Member"}],        
         "GroupDescription" : "Allows ",
         "VpcId" : {"Ref" : "VPC"}
       }
