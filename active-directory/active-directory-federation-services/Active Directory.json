@@ -5,16 +5,16 @@
 
   "Parameters" : {
 
+    "KeyPair" : {
+      "Description" : "Public/private key pairs allow you to securely connect to your instance after it launches",
+      "Type" : "String"
+    },
+
     "InstanceType" : {
       "Description" : "Amazon EC2 instance type",
       "Type" : "String",
       "Default" : "t2.small",
       "AllowedValues" : ["t2.micro", "t2.small", "t2.medium", "m3.medium", "m3.large", "m3.xlarge", "m3.2xlarge"]
-    },
-
-    "KeyPair" : {
-      "Description" : "Public/private key pairs allow you to securely connect to your instance after it launches",
-      "Type" : "String"
     },
 
     "DomainDNSName" : {
@@ -321,6 +321,7 @@
           "setup" : {
             "files" : {
               "c:\\cfn\\scripts\\Rename-Computer.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Rename-Computer.ps1"},
+              "c:\\cfn\\scripts\\Configure-Network.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Configure-Network.ps1"},              
               "c:\\cfn\\scripts\\Install-ADDS.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Install-ADDS.ps1"},
               "c:\\cfn\\scripts\\Configure-ADDS.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Configure-ADDS.ps1"},
               "c:\\cfn\\scripts\\Add-User.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Add-User.ps1"}
@@ -374,8 +375,10 @@
           "setup" : {
             "files" : {
               "c:\\cfn\\scripts\\Rename-Computer.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Rename-Computer.ps1"},
+              "c:\\cfn\\scripts\\Configure-Network.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Configure-Network.ps1"},              
               "c:\\cfn\\scripts\\Join-Domain.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Join-Domain.ps1"},
-              "c:\\cfn\\scripts\\Install-ADDS.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Install-ADDS.ps1"}
+              "c:\\cfn\\scripts\\Install-ADDS.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Install-ADDS.ps1"},
+              "c:\\cfn\\scripts\\Add-User.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Add-User.ps1"}              
             }
           },
           "rename" : {
@@ -425,7 +428,8 @@
           "setup" : {
             "files" : {
               "c:\\cfn\\scripts\\Rename-Computer.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Rename-Computer.ps1"},
-              "c:\\cfn\\scripts\\Join-Domain.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Join-Domain.ps1"}              
+              "c:\\cfn\\scripts\\Configure-Network.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Configure-Network.ps1"},
+              "c:\\cfn\\scripts\\Join-Domain.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Join-Domain.ps1"}
             }
           },
           "rename" : {
@@ -466,7 +470,8 @@
           "configSets" : {"config" : ["setup", "rename"]},
           "setup" : {
             "files" : {
-              "c:\\cfn\\scripts\\Rename-Computer.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Rename-Computer.ps1"}
+              "c:\\cfn\\scripts\\Rename-Computer.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Rename-Computer.ps1"},
+              "c:\\cfn\\scripts\\Configure-Network.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Configure-Network.ps1"},
             }
           },
           "rename" : {
@@ -499,7 +504,8 @@
           "configSets" : {"config" : ["setup", "rename"]},
           "setup" : {
             "files" : {
-              "c:\\cfn\\scripts\\Rename-Computer.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Rename-Computer.ps1"}
+              "c:\\cfn\\scripts\\Rename-Computer.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Rename-Computer.ps1"},
+              "c:\\cfn\\scripts\\Configure-Network.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Configure-Network.ps1"}
             }
           },
           "rename" : {
