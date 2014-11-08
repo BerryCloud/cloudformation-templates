@@ -479,11 +479,13 @@
       },
       "Metadata" : {
         "AWS::CloudFormation::Init" : {
-          "configSets" : {"config" : ["setup", "rename"]},
+          "configSets" : {"config" : ["setup", "rename", "join"]},
           "setup" : {
             "files" : {
               "c:\\cfn\\scripts\\Rename-Computer.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Rename-Computer.ps1"},
-              "c:\\cfn\\scripts\\Configure-Network.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Configure-Network.ps1"}
+              "c:\\cfn\\scripts\\Configure-Network.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Configure-Network.ps1"},
+              "c:\\cfn\\scripts\\Join-Domain.ps1" : {"source" : "https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Join-Domain.ps1"}
+
             }
           },
           "rename" : {
@@ -497,7 +499,16 @@
                 "waitAfterCompletion" : "forever"
               }   
             }
+          },
+          "join" : {
+            "commands" : {
+              "a-join-domain" : {
+                "command" : "powershell.exe -ExecutionPolicy RemoteSigned c:\\cfn\\scripts\\Join-Domain.ps1 -DomainName internal.berrycloud.co.uk -DomainNetBIOSName berrycloud -DomainAdminUser DomainAdministrator -DomainAdminPassword hello123!",
+                "waitAfterCompletion" : "forever"
+              }
+            }
           }
+
         }
       }
     },
