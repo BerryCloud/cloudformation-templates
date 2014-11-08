@@ -1,8 +1,8 @@
 {
    "AWSTemplateFormatVersion":"2010-09-09",
-   "Description":"JSON string",
+   "Description":"(0001) - This template creates a VPC infrastructure for a multi-AZ, multi-tier deployment of a Windows based Application infrstructure. It installs 2 Active Directory Domain Controllers into subnets in seperate AZs inside a VPC",
    "Parameters":{
-      "KeyPair":{
+      "KeyPairName":{
          "Description":"Public/private key pairs allow you to securely connect to your instance after it launches",
          "Type":"String"
       },
@@ -36,25 +36,67 @@
          "MaxLength":"15",
          "AllowedPattern":"[a-zA-Z0-9]+"
       },
-      "PublicSubnetCIDR1":{
+      "ADServerNetBIOSName1":{
+         "Description":"NetBIOS name of the 1st AD Server (upto 15 characters)",
+         "Type":"String",
+         "Default":"DC1",
+         "MinLength":"1",
+         "MaxLength":"15",
+         "AllowedPattern":"[a-zA-Z0-9]+"
+      },
+      "ADServerNetBIOSName2":{
+         "Description":"NetBIOS name of the 2nd AD Server (upto 15 characters)",
+         "Type":"String",
+         "Default":"DC2",
+         "MinLength":"1",
+         "MaxLength":"15",
+         "AllowedPattern":"[a-zA-Z0-9]+"
+      },
+      "RestoreModePassword":{
+         "Description":"Password for a separate Administrator account when the domain controller is in Restore Mode. Must be at least 8 characters containing letters, numbers and symbols",
+         "Type":"String",
+         "MinLength":"8",
+         "MaxLength":"32",
+         "AllowedPattern":"(?=^.{6,255}$)((?=.*\\d)(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[^A-Za-z0-9])(?=.*[a-z])|(?=.*[^A-Za-z0-9])(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]))^.*",
+         "NoEcho":"True",
+         "Default":"Password123"
+      },
+      "DomainAdminUser":{
+         "Description":"User name for the account that will be added as Domain Administrator. This is separate from the default \"Administrator\" account",
+         "Type":"String",
+         "Default":"StackAdmin",
+         "MinLength":"5",
+         "MaxLength":"25",
+         "AllowedPattern":"[a-zA-Z0-9]*"
+      },
+      "DomainAdminPassword":{
+         "Description":"Password for the domain admin user. Must be at least 8 characters containing letters, numbers and symbols",
+         "Type":"String",
+         "MinLength":"8",
+         "MaxLength":"32",
+         "AllowedPattern":"(?=^.{6,255}$)((?=.*\\d)(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[^A-Za-z0-9])(?=.*[a-z])|(?=.*[^A-Za-z0-9])(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]))^.*",
+         "NoEcho":"true",
+         "Default":"Password123"
+      },
+      "PublicSubnet1CIDR":{
          "Description":"CIDR Block for the Public Subnet located in AZ1",
          "Type":"String",
          "Default":"10.0.0.0/24",
          "AllowedPattern":"[a-zA-Z0-9]+\\..+"
       },
-      "PublicSubnetCIDR2":{
+      "PublicSubnet2CIDR":{
          "Description":"CIDR Block for the Public Subnet located in AZ2",
          "Type":"String",
          "Default":"10.0.1.0/24",
          "AllowedPattern":"[a-zA-Z0-9]+\\..+"
       },
-      "PrivateSubnetCIDR1":{
+      "PrivateSubnet1CIDR":{
          "Description":"CIDR Block for Private Subnet 1 located in AZ1",
          "Type":"String",
          "Default":"10.0.2.0/24",
          "AllowedPattern":"[a-zA-Z0-9]+\\..+"
       },
-      "PrivateSubnetCIDR2":{
+      "PrivateSubnet2CIDR":{
          "Description":"CIDR Block for Private Subnet 2 located in AZ2",
          "Type":"String",
          "Default":"10.0.3.0/24",
@@ -66,18 +108,41 @@
          "Default":"10.0.0.0/16",
          "AllowedPattern":"[a-zA-Z0-9]+\\..+"
       },
-      "AD1PrivateIp":{
+      "DomainController1PrivateIp":{
          "Description":"Fixed private IP for the first Active Directory server located in AZ1",
          "Type":"String",
          "Default":"10.0.2.10"
       },
-      "AD2PrivateIp":{
+      "DomainController2PrivateIp":{
          "Description":"Fixed private IP for the second Active Directory serverr located in AZ2",
          "Type":"String",
          "Default":"10.0.3.10"
       }
    },
    "Mappings":{
+      "InstanceArchitecture":{
+         "t2.micro":{
+            "Arch":"64"
+         },
+         "t2.small":{
+            "Arch":"64"
+         },
+         "t2.medium":{
+            "Arch":"64"
+         },
+         "m3.medium":{
+            "Arch":"64"
+         },
+         "m3.large":{
+            "Arch":"64"
+         },
+         "m3.xlarge":{
+            "Arch":"64"
+         },
+         "m3.2xlarge":{
+            "Arch":"64"
+         }
+      },
       "WindowsAMI":{
          "us-east-1":{
             "64":"ami-ba13abd2"
@@ -107,9 +172,6 @@
          }
       }
    },
-   "Conditions":{
-
-   },
    "Resources":{
       "DhcpOptions":{
          "Type":"AWS::EC2::DHCPOptions",
@@ -122,18 +184,18 @@
             ],
             "NtpServers":[
                {
-                  "Ref":"AD1PrivateIp"
+                  "Ref":"DomainController1PrivateIp"
                },
                {
-                  "Ref":"AD2PrivateIp"
+                  "Ref":"DomainController2PrivateIp"
                }
             ],
             "NetbiosNameServers":[
                {
-                  "Ref":"AD1PrivateIp"
+                  "Ref":"DomainController1PrivateIp"
                },
                {
-                  "Ref":"AD2PrivateIp"
+                  "Ref":"DomainController2PrivateIp"
                }
             ],
             "NetbiosNodeType":"2",
@@ -199,7 +261,7 @@
                "Ref":"VPC"
             },
             "CidrBlock":{
-               "Ref":"PublicSubnetCIDR1"
+               "Ref":"PublicSubnet1CIDR"
             },
             "AvailabilityZone":{
                "Fn::Select":[
@@ -238,7 +300,7 @@
                "Ref":"VPC"
             },
             "CidrBlock":{
-               "Ref":"PublicSubnetCIDR2"
+               "Ref":"PublicSubnet2CIDR"
             },
             "AvailabilityZone":{
                "Fn::Select":[
@@ -277,7 +339,7 @@
                "Ref":"VPC"
             },
             "CidrBlock":{
-               "Ref":"PrivateSubnetCIDR1"
+               "Ref":"PrivateSubnet1CIDR"
             },
             "AvailabilityZone":{
                "Fn::Select":[
@@ -304,7 +366,7 @@
                },
                {
                   "Key":"Role",
-                  "Value":"AD1 Subnet"
+                  "Value":"DomainController1 Subnet"
                }
             ]
          }
@@ -316,7 +378,7 @@
                "Ref":"VPC"
             },
             "CidrBlock":{
-               "Ref":"PrivateSubnetCIDR2"
+               "Ref":"PrivateSubnet2CIDR"
             },
             "AvailabilityZone":{
                "Fn::Select":[
@@ -343,7 +405,7 @@
                },
                {
                   "Key":"Role",
-                  "Value":"AD2 Subnet"
+                  "Value":"DomainController2 Subnet"
                }
             ]
          }
@@ -418,7 +480,7 @@
             }
          }
       },
-      "PublicSubnetRouteTableAssociation1":{
+      "PublicSubnet1RouteTableAssociation":{
          "Type":"AWS::EC2::SubnetRouteTableAssociation",
          "Properties":{
             "SubnetId":{
@@ -429,7 +491,7 @@
             }
          }
       },
-      "PublicSubnetRouteTableAssociation2":{
+      "PublicSubnet2RouteTableAssociation":{
          "Type":"AWS::EC2::SubnetRouteTableAssociation",
          "Properties":{
             "SubnetId":{
@@ -516,485 +578,9 @@
             }
          }
       },
-      "AD1":{
-         "DependsOn":"NAT1",
-         "Type":"AWS::EC2::Instance",
-         "Properties":{
-            "ImageId":{
-               "Fn::FindInMap":[
-                  "WindowsAMI",
-                  {
-                     "Ref":"AWS::Region"
-                  },
-                  "64"
-               ]
-            },
-            "InstanceType":{
-               "Ref":"InstanceType"
-            },
-            "Tags":[
-               {
-                  "Key":"Name",
-                  "Value":"AD1"
-               }
-            ],
-            "BlockDeviceMappings":[
-               {
-                  "DeviceName":"/dev/sda1",
-                  "Ebs":{
-                     "VolumeSize":"60",
-                     "VolumeType":"standard"
-                  }
-               }
-            ],
-            "PrivateIpAddress":{
-               "Ref":"AD1PrivateIp"
-            },
-            "KeyName":{
-               "Ref":"KeyPair"
-            },
-            "SecurityGroupIds":[
-               {
-                  "Ref":"DomainMemberSecurityGroup"
-               }
-            ],
-            "SubnetId":{
-               "Ref":"PrivateSubnet1"
-            },
-            "UserData":{
-               "Fn::Base64":{
-                  "Fn::Join":[
-                     "",
-                     [
-                        "<script>\n",
-                        "cfn-init.exe -v -c config -s ",
-                        {
-                           "Ref":"AWS::StackId"
-                        },
-                        " -r AD1",
-                        " --region ",
-                        {
-                           "Ref":"AWS::Region"
-                        },
-                        "\n",
-                        "</script>\n"
-                     ]
-                  ]
-               }
-            }
-         },
-         "Metadata":{
-            "AWS::CloudFormation::Init":{
-               "configSets":{
-                  "config":[
-                     "setup",
-                     "rename",
-                     "installADDS"
-                  ]
-               },
-               "setup":{
-                  "files":{
-                     "c:\\cfn\\scripts\\Rename-Computer.ps1":{
-                        "source":"https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Rename-Computer.ps1"
-                     },
-                     "c:\\cfn\\scripts\\Configure-Network.ps1":{
-                        "source":"https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Configure-Network.ps1"
-                     },
-                     "c:\\cfn\\scripts\\Install-ADDS.ps1":{
-                        "source":"https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Install-ADDS.ps1"
-                     },
-                     "c:\\cfn\\scripts\\Configure-ADDS.ps1":{
-                        "source":"https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Configure-ADDS.ps1"
-                     },
-                     "c:\\cfn\\scripts\\Add-User.ps1":{
-                        "source":"https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Add-User.ps1"
-                     }
-                  }
-               },
-               "rename":{
-                  "commands":{
-                     "a-configure-network":{
-                        "command":"powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Configure-Network.ps1",
-                        "waitAfterCompletion":30
-                     },
-                     "b-rename":{
-                        "command":"powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Rename-Computer.ps1 -NewName AD1",
-                        "waitAfterCompletion":"forever"
-                     }
-                  }
-               },
-               "installADDS":{
-                  "commands":{
-                     "a-install-ADDS":{
-                        "command":"powershell.exe -ExecutionPolicy RemoteSigned c:\\cfn\\scripts\\Install-ADDS.ps1",
-                        "waitAfterCompletion":0
-                     },
-                     "b-configure-ADDS":{
-                        "command":"powershell.exe -ExecutionPolicy RemoteSigned c:\\cfn\\scripts\\Configure-ADDS.ps1 -DomainName internal.berrycloud.co.uk -DomainNetbiosName berrycloud -SafeModeAdministratorPassword hello123!",
-                        "waitAfterCompletion":"forever"
-                     },
-                     "c-add-user":{
-                        "command":"powershell.exe -ExecutionPolicy RemoteSigned c:\\cfn\\scripts\\Add-User.ps1 -DomainAdminUser DomainAdministrator -DomainAdminPassword hello123!",
-                        "waitAfterCompletion":0
-                     }
-                  }
-               }
-            }
-         }
-      },
-      "AD2":{
-         "DependsOn":"AD1",
-         "Type":"AWS::EC2::Instance",
-         "Properties":{
-            "ImageId":{
-               "Fn::FindInMap":[
-                  "WindowsAMI",
-                  {
-                     "Ref":"AWS::Region"
-                  },
-                  "64"
-               ]
-            },
-            "InstanceType":{
-               "Ref":"InstanceType"
-            },
-            "Tags":[
-               {
-                  "Key":"Name",
-                  "Value":"AD2"
-               }
-            ],
-            "BlockDeviceMappings":[
-               {
-                  "DeviceName":"/dev/sda1",
-                  "Ebs":{
-                     "VolumeSize":"60",
-                     "VolumeType":"standard"
-                  }
-               }
-            ],
-            "PrivateIpAddress":{
-               "Ref":"AD2PrivateIp"
-            },
-            "KeyName":{
-               "Ref":"KeyPair"
-            },
-            "SecurityGroupIds":[
-               {
-                  "Ref":"DomainMemberSecurityGroup"
-               }
-            ],
-            "SubnetId":{
-               "Ref":"PrivateSubnet2"
-            },
-            "UserData":{
-               "Fn::Base64":{
-                  "Fn::Join":[
-                     "",
-                     [
-                        "<script>\n",
-                        "cfn-init.exe -v -c config -s ",
-                        {
-                           "Ref":"AWS::StackId"
-                        },
-                        " -r AD2",
-                        " --region ",
-                        {
-                           "Ref":"AWS::Region"
-                        },
-                        "\n",
-                        "</script>\n"
-                     ]
-                  ]
-               }
-            }
-         },
-         "Metadata":{
-            "AWS::CloudFormation::Init":{
-               "configSets":{
-                  "config":[
-                     "setup",
-                     "rename",
-                     "join"
-                  ]
-               },
-               "setup":{
-                  "files":{
-                     "c:\\cfn\\scripts\\Rename-Computer.ps1":{
-                        "source":"https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Rename-Computer.ps1"
-                     },
-                     "c:\\cfn\\scripts\\Configure-Network.ps1":{
-                        "source":"https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Configure-Network.ps1"
-                     },
-                     "c:\\cfn\\scripts\\Join-Domain.ps1":{
-                        "source":"https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Join-Domain.ps1"
-                     },
-                     "c:\\cfn\\scripts\\Install-ADDS.ps1":{
-                        "source":"https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Install-ADDS.ps1"
-                     },
-                     "c:\\cfn\\scripts\\Add-User.ps1":{
-                        "source":"https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Add-User.ps1"
-                     }
-                  }
-               },
-               "rename":{
-                  "commands":{
-                     "a-configure-network":{
-                        "command":"powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Configure-Network.ps1 -Dns1 10.0.2.10",
-                        "waitAfterCompletion":30
-                     },
-                     "b-rename":{
-                        "command":"powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Rename-Computer.ps1 -NewName AD2",
-                        "waitAfterCompletion":"forever"
-                     }
-                  }
-               },
-               "join":{
-                  "commands":{
-                     "a-join-domain":{
-                        "command":"powershell.exe -ExecutionPolicy RemoteSigned c:\\cfn\\scripts\\Join-Domain.ps1 -DomainName internal.berrycloud.co.uk -DomainNetBIOSName berrycloud -DomainAdminUser DomainAdministrator -DomainAdminPassword hello123!",
-                        "waitAfterCompletion":"forever"
-                     }
-                  },
-                  "installADDS":{
-                     "commands":{
-                        "b-install-ADDS":{
-                           "command":"powershell.exe -ExecutionPolicy RemoteSigned c:\\cfn\\scripts\\Install-ADDS.ps1",
-                           "waitAfterCompletion":0
-                        }
-                     }
-                  }
-               }
-            }
-         }
-      },
-      "ADFS1":{
-         "DependsOn":"AD1",
-         "Type":"AWS::EC2::Instance",
-         "Properties":{
-            "ImageId":{
-               "Fn::FindInMap":[
-                  "WindowsAMI",
-                  {
-                     "Ref":"AWS::Region"
-                  },
-                  "64"
-               ]
-            },
-            "InstanceType":{
-               "Ref":"InstanceType"
-            },
-            "Tags":[
-               {
-                  "Key":"Name",
-                  "Value":"ADFS1"
-               }
-            ],
-            "BlockDeviceMappings":[
-               {
-                  "DeviceName":"/dev/sda1",
-                  "Ebs":{
-                     "VolumeSize":"40",
-                     "VolumeType":"standard"
-                  }
-               }
-            ],
-            "KeyName":{
-               "Ref":"KeyPair"
-            },
-            "SecurityGroupIds":[
-               {
-                  "Ref":"DomainMemberSecurityGroup"
-               },
-               {
-                  "Ref":"ADFSSecurityGroup"
-               }
-            ],
-            "SubnetId":{
-               "Ref":"PrivateSubnet1"
-            },
-            "UserData":{
-               "Fn::Base64":{
-                  "Fn::Join":[
-                     "",
-                     [
-                        "<script>\n",
-                        "cfn-init.exe -v -c config -s ",
-                        {
-                           "Ref":"AWS::StackId"
-                        },
-                        " -r ADFS1",
-                        " --region ",
-                        {
-                           "Ref":"AWS::Region"
-                        },
-                        "\n",
-                        "</script>\n"
-                     ]
-                  ]
-               }
-            }
-         },
-         "Metadata":{
-            "AWS::CloudFormation::Init":{
-               "configSets":{
-                  "config":[
-                     "setup",
-                     "rename",
-                     "join"
-                  ]
-               },
-               "setup":{
-                  "files":{
-                     "c:\\cfn\\scripts\\Rename-Computer.ps1":{
-                        "source":"https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Rename-Computer.ps1"
-                     },
-                     "c:\\cfn\\scripts\\Configure-Network.ps1":{
-                        "source":"https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Configure-Network.ps1"
-                     },
-                     "c:\\cfn\\scripts\\Join-Domain.ps1":{
-                        "source":"https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Join-Domain.ps1"
-                     }
-                  }
-               },
-               "rename":{
-                  "commands":{
-                     "a-configure-network":{
-                        "command":"powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Configure-Network.ps1 -Dns1 10.0.2.10 -Dns2 10.0.3.10",
-                        "waitAfterCompletion":30
-                     },
-                     "b-rename":{
-                        "command":"powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Rename-Computer.ps1 -NewName ADFS1",
-                        "waitAfterCompletion":"forever"
-                     }
-                  }
-               },
-               "join":{
-                  "commands":{
-                     "a-join-domain":{
-                        "command":"powershell.exe -ExecutionPolicy RemoteSigned c:\\cfn\\scripts\\Join-Domain.ps1 -DomainName internal.berrycloud.co.uk -DomainNetBIOSName berrycloud -DomainAdminUser DomainAdministrator -DomainAdminPassword hello123!",
-                        "waitAfterCompletion":"forever"
-                     }
-                  }
-               }
-            }
-         }
-      },
-      "ADFS2":{
-         "DependsOn":"ADFS1",
-         "Type":"AWS::EC2::Instance",
-         "Properties":{
-            "ImageId":{
-               "Fn::FindInMap":[
-                  "WindowsAMI",
-                  {
-                     "Ref":"AWS::Region"
-                  },
-                  "64"
-               ]
-            },
-            "InstanceType":{
-               "Ref":"InstanceType"
-            },
-            "Tags":[
-               {
-                  "Key":"Name",
-                  "Value":"ADFS2"
-               }
-            ],
-            "BlockDeviceMappings":[
-               {
-                  "DeviceName":"/dev/sda1",
-                  "Ebs":{
-                     "VolumeSize":"40",
-                     "VolumeType":"standard"
-                  }
-               }
-            ],
-            "KeyName":{
-               "Ref":"KeyPair"
-            },
-            "SecurityGroupIds":[
-               {
-                  "Ref":"DomainMemberSecurityGroup"
-               },
-               {
-                  "Ref":"ADFSSecurityGroup"
-               }
-            ],
-            "SubnetId":{
-               "Ref":"PrivateSubnet2"
-            },
-            "UserData":{
-               "Fn::Base64":{
-                  "Fn::Join":[
-                     "",
-                     [
-                        "<script>\n",
-                        "cfn-init.exe -v -c config -s ",
-                        {
-                           "Ref":"AWS::StackId"
-                        },
-                        " -r ADFS2",
-                        " --region ",
-                        {
-                           "Ref":"AWS::Region"
-                        },
-                        "\n",
-                        "</script>\n"
-                     ]
-                  ]
-               }
-            }
-         },
-         "Metadata":{
-            "AWS::CloudFormation::Init":{
-               "configSets":{
-                  "config":[
-                     "setup",
-                     "rename",
-                     "join"
-                  ]
-               },
-               "setup":{
-                  "files":{
-                     "c:\\cfn\\scripts\\Rename-Computer.ps1":{
-                        "source":"https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Rename-Computer.ps1"
-                     },
-                     "c:\\cfn\\scripts\\Configure-Network.ps1":{
-                        "source":"https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Configure-Network.ps1"
-                     },
-                     "c:\\cfn\\scripts\\Join-Domain.ps1":{
-                        "source":"https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Join-Domain.ps1"
-                     }
-                  }
-               },
-               "rename":{
-                  "commands":{
-                     "a-configure-network":{
-                        "command":"powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Configure-Network.ps1 -Dns1 10.0.2.10 -Dns2 10.0.3.10",
-                        "waitAfterCompletion":30
-                     },
-                     "b-rename":{
-                        "command":"powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Rename-Computer.ps1 -NewName ADFS2",
-                        "waitAfterCompletion":"forever"
-                     }
-                  }
-               },
-               "join":{
-                  "commands":{
-                     "a-join-domain":{
-                        "command":"powershell.exe -ExecutionPolicy RemoteSigned c:\\cfn\\scripts\\Join-Domain.ps1 -DomainName internal.berrycloud.co.uk -DomainNetBIOSName berrycloud -DomainAdminUser DomainAdministrator -DomainAdminPassword hello123!",
-                        "waitAfterCompletion":"forever"
-                     }
-                  }
-               }
-            }
-         }
-      },
       "Sync":{
-         "DependsOn":"AD1",
          "Type":"AWS::EC2::Instance",
+         "DependsOn":"DomainController2",
          "Properties":{
             "ImageId":{
                "Fn::FindInMap":[
@@ -1002,11 +588,22 @@
                   {
                      "Ref":"AWS::Region"
                   },
-                  "64"
+                  {
+                     "Fn::FindInMap":[
+                        "InstanceArchitecture",
+                        {
+                           "Ref":"InstanceType"
+                        },
+                        "Arch"
+                     ]
+                  }
                ]
             },
             "InstanceType":{
                "Ref":"InstanceType"
+            },
+            "SubnetId":{
+               "Ref":"PublicSubnet2"
             },
             "Tags":[
                {
@@ -1023,261 +620,13 @@
                   }
                }
             ],
-            "KeyName":{
-               "Ref":"KeyPair"
-            },
             "SecurityGroupIds":[
                {
                   "Ref":"DomainMemberSecurityGroup"
                }
             ],
-            "SubnetId":{
-               "Ref":"PrivateSubnet2"
-            },
-            "UserData":{
-               "Fn::Base64":{
-                  "Fn::Join":[
-                     "",
-                     [
-                        "<script>\n",
-                        "cfn-init.exe -v -c config -s ",
-                        {
-                           "Ref":"AWS::StackId"
-                        },
-                        " -r Sync",
-                        " --region ",
-                        {
-                           "Ref":"AWS::Region"
-                        },
-                        "\n",
-                        "</script>\n"
-                     ]
-                  ]
-               }
-            }
-         },
-         "Metadata":{
-            "AWS::CloudFormation::Init":{
-               "configSets":{
-                  "config":[
-                     "setup",
-                     "rename"
-                  ]
-               },
-               "setup":{
-                  "files":{
-                     "c:\\cfn\\scripts\\Rename-Computer.ps1":{
-                        "source":"https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Rename-Computer.ps1"
-                     },
-                     "c:\\cfn\\scripts\\Configure-Network.ps1":{
-                        "source":"https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Configure-Network.ps1"
-                     }
-                  }
-               },
-               "rename":{
-                  "commands":{
-                     "a-configure-network":{
-                        "command":"powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Configure-Network.ps1 -Dns1 10.0.2.10 -Dns2 10.0.3.10",
-                        "waitAfterCompletion":30
-                     },
-                     "b-rename":{
-                        "command":"powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Rename-Computer.ps1 -NewName Sync",
-                        "waitAfterCompletion":"forever"
-                     }
-                  }
-               }
-            }
-         }
-      },
-      "WAP1":{
-         "DependsOn":"ADFS1",
-         "Type":"AWS::EC2::Instance",
-         "Properties":{
-            "ImageId":{
-               "Fn::FindInMap":[
-                  "WindowsAMI",
-                  {
-                     "Ref":"AWS::Region"
-                  },
-                  "64"
-               ]
-            },
-            "InstanceType":{
-               "Ref":"InstanceType"
-            },
-            "Tags":[
-               {
-                  "Key":"Name",
-                  "Value":"WAP1"
-               }
-            ],
-            "BlockDeviceMappings":[
-               {
-                  "DeviceName":"/dev/sda1",
-                  "Ebs":{
-                     "VolumeSize":"40",
-                     "VolumeType":"standard"
-                  }
-               }
-            ],
             "KeyName":{
-               "Ref":"KeyPair"
-            },
-            "SecurityGroupIds":[
-               {
-                  "Ref":"RDPSecurityGroup"
-               },
-               {
-                  "Ref":"WebServerSecurityGroup"
-               },
-               {
-                  "Ref":"WAPSecurityGroup"
-               }
-            ],
-            "SubnetId":{
-               "Ref":"PublicSubnet1"
-            },
-            "UserData":{
-               "Fn::Base64":{
-                  "Fn::Join":[
-                     "",
-                     [
-                        "<script>\n",
-                        "cfn-init.exe -v -c config -s ",
-                        {
-                           "Ref":"AWS::StackId"
-                        },
-                        " -r WAP1",
-                        " --region ",
-                        {
-                           "Ref":"AWS::Region"
-                        },
-                        "\n",
-                        "</script>\n"
-                     ]
-                  ]
-               }
-            }
-         },
-         "Metadata":{
-            "AWS::CloudFormation::Init":{
-               "configSets":{
-                  "config":[
-                     "setup",
-                     "rename"
-                  ]
-               },
-               "setup":{
-                  "files":{
-                     "c:\\cfn\\scripts\\Rename-Computer.ps1":{
-                        "source":"https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Rename-Computer.ps1"
-                     }
-                  }
-               },
-               "rename":{
-                  "commands":{
-                     "a-rename":{
-                        "command":"powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Rename-Computer.ps1 -NewName WAP1",
-                        "waitAfterCompletion":"forever"
-                     }
-                  }
-               }
-            }
-         }
-      },
-      "WAP2":{
-         "DependsOn":"ADFS1",
-         "Type":"AWS::EC2::Instance",
-         "Properties":{
-            "ImageId":{
-               "Fn::FindInMap":[
-                  "WindowsAMI",
-                  {
-                     "Ref":"AWS::Region"
-                  },
-                  "64"
-               ]
-            },
-            "InstanceType":{
-               "Ref":"InstanceType"
-            },
-            "Tags":[
-               {
-                  "Key":"Name",
-                  "Value":"WAP2"
-               }
-            ],
-            "BlockDeviceMappings":[
-               {
-                  "DeviceName":"/dev/sda1",
-                  "Ebs":{
-                     "VolumeSize":"40",
-                     "VolumeType":"standard"
-                  }
-               }
-            ],
-            "KeyName":{
-               "Ref":"KeyPair"
-            },
-            "SecurityGroupIds":[
-               {
-                  "Ref":"RDPSecurityGroup"
-               },
-               {
-                  "Ref":"WebServerSecurityGroup"
-               },
-               {
-                  "Ref":"WAPSecurityGroup"
-               }
-            ],
-            "SubnetId":{
-               "Ref":"PublicSubnet2"
-            },
-            "UserData":{
-               "Fn::Base64":{
-                  "Fn::Join":[
-                     "",
-                     [
-                        "<script>\n",
-                        "cfn-init.exe -v -c config -s ",
-                        {
-                           "Ref":"AWS::StackId"
-                        },
-                        " -r WAP2",
-                        " --region ",
-                        {
-                           "Ref":"AWS::Region"
-                        },
-                        "\n",
-                        "</script>\n"
-                     ]
-                  ]
-               }
-            }
-         },
-         "Metadata":{
-            "AWS::CloudFormation::Init":{
-               "configSets":{
-                  "config":[
-                     "setup",
-                     "rename"
-                  ]
-               },
-               "setup":{
-                  "files":{
-                     "c:\\cfn\\scripts\\Rename-Computer.ps1":{
-                        "source":"https://s3-eu-west-1.amazonaws.com/berrycloud-powershell/AD/Rename-Computer.ps1"
-                     }
-                  }
-               },
-               "rename":{
-                  "commands":{
-                     "a-rename":{
-                        "command":"powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Rename-Computer.ps1 -NewName WAP2",
-                        "waitAfterCompletion":"forever"
-                     }
-                  }
-               }
+               "Ref":"KeyPairName"
             }
          }
       },
@@ -1290,7 +639,15 @@
                   {
                      "Ref":"AWS::Region"
                   },
-                  "64"
+                  {
+                     "Fn::FindInMap":[
+                        "InstanceArchitecture",
+                        {
+                           "Ref":"InstanceType"
+                        },
+                        "Arch"
+                     ]
+                  }
                ]
             },
             "InstanceType":{
@@ -1318,10 +675,1074 @@
                }
             ],
             "KeyName":{
-               "Ref":"KeyPair"
+               "Ref":"KeyPairName"
             },
             "SourceDestCheck":"false"
          }
+      },
+      "DomainController1":{
+         "Type":"AWS::EC2::Instance",
+         "DependsOn":"NAT1",
+         "Metadata":{
+            "AWS::CloudFormation::Init":{
+               "configSets":{
+                  "config":[
+                     "setup",
+                     "rename",
+                     "installADDS",
+                     "configureSites",
+                     "finalize"
+                  ]
+               },
+               "setup":{
+                  "files":{
+                     "c:\\cfn\\cfn-hup.conf":{
+                        "content":{
+                           "Fn::Join":[
+                              "",
+                              [
+                                 "[main]\n",
+                                 "stack=",
+                                 {
+                                    "Ref":"AWS::StackName"
+                                 },
+                                 "\n",
+                                 "region=",
+                                 {
+                                    "Ref":"AWS::Region"
+                                 },
+                                 "\n"
+                              ]
+                           ]
+                        }
+                     },
+                     "c:\\cfn\\hooks.d\\cfn-auto-reloader.conf":{
+                        "content":{
+                           "Fn::Join":[
+                              "",
+                              [
+                                 "[cfn-auto-reloader-hook]\n",
+                                 "triggers=post.update\n",
+                                 "path=Resources.DomainController.Metadata.AWS::CloudFormation::Init\n",
+                                 "action=cfn-init.exe -v -c config -s ",
+                                 {
+                                    "Ref":"AWS::StackId"
+                                 },
+                                 " -r DomainController",
+                                 " --region ",
+                                 {
+                                    "Ref":"AWS::Region"
+                                 },
+                                 "\n"
+                              ]
+                           ]
+                        }
+                     },
+                     "c:\\cfn\\scripts\\Set-StaticIP.ps1":{
+                        "content":{
+                           "Fn::Join":[
+                              "",
+                              [
+                                 "$netip = Get-NetIPConfiguration;",
+                                 "$ipconfig = Get-NetIPAddress | ?{$_.IpAddress -eq $netip.IPv4Address.IpAddress};",
+                                 "Get-NetAdapter | Set-NetIPInterface -DHCP Disabled;",
+                                 "Get-NetAdapter | New-NetIPAddress -AddressFamily IPv4 -IPAddress $netip.IPv4Address.IpAddress -PrefixLength $ipconfig.PrefixLength -DefaultGateway $netip.IPv4DefaultGateway.NextHop;",
+                                 "Get-NetAdapter | Set-DnsClientServerAddress -ServerAddresses $netip.DNSServer.ServerAddresses;",
+                                 "\n"
+                              ]
+                           ]
+                        }
+                     },
+                     "c:\\cfn\\scripts\\New-LabADUser.ps1":{
+                        "source":"https://s3.amazonaws.com/CFN_WS2012_Scripts/AD/New-LabADUser.ps1"
+                     },
+                     "c:\\cfn\\scripts\\users.csv":{
+                        "source":"https://s3.amazonaws.com/CFN_WS2012_Scripts/AD/users.csv"
+                     }
+                  },
+                  "services":{
+                     "windows":{
+                        "cfn-hup":{
+                           "enabled":"true",
+                           "ensureRunning":"true",
+                           "files":[
+                              "c:\\cfn\\cfn-hup.conf",
+                              "c:\\cfn\\hooks.d\\cfn-auto-reloader.conf"
+                           ]
+                        }
+                     }
+                  },
+                  "commands":{
+                     "a-disable-win-fw":{
+                        "command":{
+                           "Fn::Join":[
+                              "",
+                              [
+                                 "powershell.exe -Command \"Get-NetFirewallProfile | Set-NetFirewallProfile -Enabled False\""
+                              ]
+                           ]
+                        },
+                        "waitAfterCompletion":"0"
+                     }
+                  }
+               },
+               "rename":{
+                  "commands":{
+                     "a-set-static-ip":{
+                        "command":{
+                           "Fn::Join":[
+                              "",
+                              [
+                                 "powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Set-StaticIP.ps1"
+                              ]
+                           ]
+                        },
+                        "waitAfterCompletion":"45"
+                     },
+                     "b-execute-powershell-script-RenameComputer":{
+                        "command":{
+                           "Fn::Join":[
+                              "",
+                              [
+                                 "powershell.exe Rename-Computer -NewName ",
+                                 {
+                                    "Ref":"ADServerNetBIOSName1"
+                                 },
+                                 " -Restart"
+                              ]
+                           ]
+                        },
+                        "waitAfterCompletion":"forever"
+                     }
+                  }
+               },
+               "installADDS":{
+                  "commands":{
+                     "1-install-prereqs":{
+                        "command":{
+                           "Fn::Join":[
+                              "",
+                              [
+                                 "powershell.exe -Command \"Install-WindowsFeature AD-Domain-Services, rsat-adds -IncludeAllSubFeature\""
+                              ]
+                           ]
+                        },
+                        "waitAfterCompletion":"0"
+                     },
+                     "2-install-adds":{
+                        "command":{
+                           "Fn::Join":[
+                              "",
+                              [
+                                 "powershell.exe -Command ",
+                                 "\"Install-ADDSForest -DomainName ",
+                                 {
+                                    "Ref":"DomainDNSName"
+                                 },
+                                 " ",
+                                 "-SafeModeAdministratorPassword (convertto-securestring ",
+                                 {
+                                    "Ref":"DomainAdminPassword"
+                                 },
+                                 " -asplaintext -force) ",
+                                 "-DomainMode Win2012 ",
+                                 "-DomainNetbiosName ",
+                                 {
+                                    "Ref":"DomainNetBIOSName"
+                                 },
+                                 " ",
+                                 "-ForestMode Win2012 ",
+                                 "-Confirm:$false ",
+                                 "-Force\""
+                              ]
+                           ]
+                        },
+                        "waitAfterCompletion":"forever"
+                     },
+                     "3-restart-service":{
+                        "command":{
+                           "Fn::Join":[
+                              "",
+                              [
+                                 "powershell.exe -Command Restart-Service NetLogon -EA 0"
+                              ]
+                           ]
+                        },
+                        "waitAfterCompletion":"180"
+                     },
+                     "4-create-adminuser":{
+                        "command":{
+                           "Fn::Join":[
+                              "",
+                              [
+                                 "powershell.exe -Command ",
+                                 "\"New-ADUser ",
+                                 "-Name ",
+                                 {
+                                    "Ref":"DomainAdminUser"
+                                 },
+                                 " ",
+                                 "-UserPrincipalName ",
+                                 {
+                                    "Ref":"DomainAdminUser"
+                                 },
+                                 "@",
+                                 {
+                                    "Ref":"DomainDNSName"
+                                 },
+                                 " ",
+                                 "-AccountPassword (ConvertTo-SecureString ",
+                                 {
+                                    "Ref":"DomainAdminPassword"
+                                 },
+                                 " -AsPlainText -Force) ",
+                                 "-Enabled $true ",
+                                 "-PasswordNeverExpires $true\""
+                              ]
+                           ]
+                        },
+                        "waitAfterCompletion":"0"
+                     },
+                     "5-update-adminuser":{
+                        "command":{
+                           "Fn::Join":[
+                              "",
+                              [
+                                 "powershell.exe -Command \"",
+                                 "Add-ADGroupMember 'Domain Admins' -Members ",
+                                 {
+                                    "Ref":"DomainAdminUser"
+                                 },
+                                 "\""
+                              ]
+                           ]
+                        },
+                        "waitAfterCompletion":"0"
+                     }
+                  }
+               },
+               "configureSites":{
+                  "commands":{
+                     "a-rename-default-site":{
+                        "command":{
+                           "Fn::Join":[
+                              "",
+                              [
+                                 "powershell.exe ",
+                                 "\"",
+                                 "Get-ADObject -SearchBase (Get-ADRootDSE).ConfigurationNamingContext -filter {Name -eq 'Default-First-Site-Name'} | Rename-ADObject -NewName AZ1",
+                                 "\""
+                              ]
+                           ]
+                        },
+                        "waitAfterCompletion":"0"
+                     },
+                     "b-create-site-2":{
+                        "command":{
+                           "Fn::Join":[
+                              "",
+                              [
+                                 "powershell.exe New-ADReplicationSite AZ2"
+                              ]
+                           ]
+                        },
+                        "waitAfterCompletion":"0"
+                     },
+                     "c-create-dmzsubnet-1":{
+                        "command":{
+                           "Fn::Join":[
+                              "",
+                              [
+                                 "powershell.exe -Command New-ADReplicationSubnet -Name ",
+                                 {
+                                    "Ref":"PublicSubnet1CIDR"
+                                 },
+                                 " -Site AZ1"
+                              ]
+                           ]
+                        },
+                        "waitAfterCompletion":"0"
+                     },
+                     "d-create-dmzsubnet-2":{
+                        "command":{
+                           "Fn::Join":[
+                              "",
+                              [
+                                 "powershell.exe -Command New-ADReplicationSubnet -Name ",
+                                 {
+                                    "Ref":"PublicSubnet2CIDR"
+                                 },
+                                 " -Site AZ2"
+                              ]
+                           ]
+                        },
+                        "waitAfterCompletion":"0"
+                     },
+                     "e-create-subnet-1":{
+                        "command":{
+                           "Fn::Join":[
+                              "",
+                              [
+                                 "powershell.exe -Command New-ADReplicationSubnet -Name ",
+                                 {
+                                    "Ref":"PrivateSubnet1CIDR"
+                                 },
+                                 " -Site AZ1"
+                              ]
+                           ]
+                        },
+                        "waitAfterCompletion":"0"
+                     },
+                     "f-create-subnet-2":{
+                        "command":{
+                           "Fn::Join":[
+                              "",
+                              [
+                                 "powershell.exe -Command New-ADReplicationSubnet -Name ",
+                                 {
+                                    "Ref":"PrivateSubnet2CIDR"
+                                 },
+                                 " -Site AZ2"
+                              ]
+                           ]
+                        },
+                        "waitAfterCompletion":"0"
+                     },
+                     "m-set-site-link":{
+                        "command":{
+                           "Fn::Join":[
+                              "",
+                              [
+                                 "powershell.exe -Command \"",
+                                 "Get-ADReplicationSiteLink -Filter * | Set-ADReplicationSiteLink -SitesIncluded @{add='AZ2'} -ReplicationFrequencyInMinutes 15\""
+                              ]
+                           ]
+                        },
+                        "waitAfterCompletion":"0"
+                     }
+                  }
+               },
+               "finalize":{
+                  "commands":{
+                     "a-signal-success":{
+                        "command":{
+                           "Fn::Join":[
+                              "",
+                              [
+                                 "cfn-signal.exe -e 0 \"",
+                                 {
+                                    "Ref":"DomainController1WaitHandle"
+                                 },
+                                 "\""
+                              ]
+                           ]
+                        }
+                     }
+                  }
+               }
+            }
+         },         
+         "Properties":{
+            "ImageId":{
+               "Fn::FindInMap":[
+                  "WindowsAMI",
+                  {
+                     "Ref":"AWS::Region"
+                  },
+                  {
+                     "Fn::FindInMap":[
+                        "InstanceArchitecture",
+                        {
+                           "Ref":"InstanceType"
+                        },
+                        "Arch"
+                     ]
+                  }
+               ]
+            },
+            "InstanceType":{
+               "Ref":"InstanceType"
+            },
+            "SubnetId":{
+               "Ref":"PrivateSubnet1"
+            },
+            "Tags":[
+               {
+                  "Key":"Name",
+                  "Value":{
+                     "Ref":"ADServerNetBIOSName1"
+                  }
+               }
+            ],
+            "BlockDeviceMappings":[
+               {
+                  "DeviceName":"/dev/sda1",
+                  "Ebs":{
+                     "VolumeSize":"60",
+                     "VolumeType":"standard"
+                  }
+               }
+            ],
+            "SecurityGroupIds":[
+               {
+                  "Ref":"DomainMemberSecurityGroup"
+               }
+            ],
+            "PrivateIpAddress":{
+               "Ref":"DomainController1PrivateIp"
+            },
+            "KeyName":{
+               "Ref":"KeyPairName"
+            },
+            "UserData":{
+               "Fn::Base64":{
+                  "Fn::Join":[
+                     "",
+                     [
+                        "<script>\n",
+                        "cfn-init.exe -v -c config -s ",
+                        {
+                           "Ref":"AWS::StackId"
+                        },
+                        " -r DomainController1",
+                        " --region ",
+                        {
+                           "Ref":"AWS::Region"
+                        },
+                        "\n",
+                        "</script>\n"
+                     ]
+                  ]
+               }
+            }            
+         }
+      },
+      "DomainController2":{
+         "Type":"AWS::EC2::Instance",
+         "DependsOn":"DomainController1WaitCondition",
+         "Metadata":{
+            "AWS::CloudFormation::Init":{
+               "configSets":{
+                  "config":[
+                     "setup",
+                     "rename",
+                     "join",
+                     "addDomainController",
+                     "finalize"
+                  ]
+               },
+               "setup":{
+                  "files":{
+                     "c:\\cfn\\cfn-hup.conf":{
+                        "content":{
+                           "Fn::Join":[
+                              "",
+                              [
+                                 "[main]\n",
+                                 "stack=",
+                                 {
+                                    "Ref":"AWS::StackName"
+                                 },
+                                 "\n",
+                                 "region=",
+                                 {
+                                    "Ref":"AWS::Region"
+                                 },
+                                 "\n"
+                              ]
+                           ]
+                        }
+                     },
+                     "c:\\cfn\\hooks.d\\cfn-auto-reloader.conf":{
+                        "content":{
+                           "Fn::Join":[
+                              "",
+                              [
+                                 "[cfn-auto-reloader-hook]\n",
+                                 "triggers=post.update\n",
+                                 "path=Resources.DomainController2.Metadata.AWS::CloudFormation::Init\n",
+                                 "action=cfn-init.exe -v -c config -s ",
+                                 {
+                                    "Ref":"AWS::StackId"
+                                 },
+                                 " -r DomainController2",
+                                 " --region ",
+                                 {
+                                    "Ref":"AWS::Region"
+                                 },
+                                 "\n"
+                              ]
+                           ]
+                        }
+                     },
+                     "c:\\cfn\\scripts\\Set-StaticIP.ps1":{
+                        "content":{
+                           "Fn::Join":[
+                              "",
+                              [
+                                 "$netip = Get-NetIPConfiguration;",
+                                 "$ipconfig = Get-NetIPAddress | ?{$_.IpAddress -eq $netip.IPv4Address.IpAddress};",
+                                 "Get-NetAdapter | Set-NetIPInterface -DHCP Disabled;",
+                                 "Get-NetAdapter | New-NetIPAddress -AddressFamily IPv4 -IPAddress $netip.IPv4Address.IpAddress -PrefixLength $ipconfig.PrefixLength -DefaultGateway $netip.IPv4DefaultGateway.NextHop;",
+                                 "Get-NetAdapter | Set-DnsClientServerAddress -ServerAddresses ",
+                                 {
+                                    "Ref":"DomainController1PrivateIp"
+                                 },
+                                 "\n"
+                              ]
+                           ]
+                        }
+                     }
+                  },
+                  "services":{
+                     "windows":{
+                        "cfn-hup":{
+                           "enabled":"true",
+                           "ensureRunning":"true",
+                           "files":[
+                              "c:\\cfn\\cfn-hup.conf",
+                              "c:\\cfn\\hooks.d\\cfn-auto-reloader.conf"
+                           ]
+                        }
+                     }
+                  },
+                  "commands":{
+                     "a-disable-win-fw":{
+                        "command":{
+                           "Fn::Join":[
+                              "",
+                              [
+                                 "powershell.exe -Command \"Get-NetFirewallProfile | Set-NetFirewallProfile -Enabled False\""
+                              ]
+                           ]
+                        },
+                        "waitAfterCompletion":"0"
+                     }
+                  }
+               },
+               "rename":{
+                  "commands":{
+                     "a-set-static-ip":{
+                        "command":{
+                           "Fn::Join":[
+                              "",
+                              [
+                                 "powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Set-StaticIP.ps1"
+                              ]
+                           ]
+                        },
+                        "waitAfterCompletion":"45"
+                     },
+                     "b-execute-powershell-script-RenameComputer":{
+                        "command":{
+                           "Fn::Join":[
+                              "",
+                              [
+                                 "powershell.exe Rename-Computer -NewName ",
+                                 {
+                                    "Ref":"ADServerNetBIOSName2"
+                                 },
+                                 " -Restart"
+                              ]
+                           ]
+                        },
+                        "waitAfterCompletion":"forever"
+                     }
+                  }
+               },
+               "join":{
+                  "commands":{
+                     "a-join-domain":{
+                        "command":{
+                           "Fn::Join":[
+                              "",
+                              [
+                                 "powershell.exe -Command \"",
+                                 "Add-Computer -DomainName ",
+                                 {
+                                    "Ref":"DomainDNSName"
+                                 },
+                                 " -Credential ",
+                                 "(New-Object System.Management.Automation.PSCredential('",
+                                 {
+                                    "Ref":"DomainNetBIOSName"
+                                 },
+                                 "\\",
+                                 {
+                                    "Ref":"DomainAdminUser"
+                                 },
+                                 "',",
+                                 "(ConvertTo-SecureString ",
+                                 {
+                                    "Ref":"DomainAdminPassword"
+                                 },
+                                 " -AsPlainText -Force))) ",
+                                 "-Restart\""
+                              ]
+                           ]
+                        },
+                        "waitAfterCompletion":"forever"
+                     }
+                  }
+               },
+               "addDomainController":{
+                  "commands":{
+                     "1-install-prereqs":{
+                        "command":{
+                           "Fn::Join":[
+                              "",
+                              [
+                                 "powershell.exe -Command \"Install-WindowsFeature AD-Domain-Services, rsat-adds -IncludeAllSubFeature\""
+                              ]
+                           ]
+                        },
+                        "waitAfterCompletion":"0"
+                     },
+                     "2-add-dc":{
+                        "command":{
+                           "Fn::Join":[
+                              "",
+                              [
+                                 "powershell.exe -Command \"",
+                                 "Install-ADDSDomainController -InstallDns -DomainName ",
+                                 {
+                                    "Ref":"DomainDNSName"
+                                 },
+                                 " -Credential ",
+                                 "(New-Object System.Management.Automation.PSCredential('",
+                                 {
+                                    "Ref":"DomainNetBIOSName"
+                                 },
+                                 "\\",
+                                 {
+                                    "Ref":"DomainAdminUser"
+                                 },
+                                 "',",
+                                 "(ConvertTo-SecureString ",
+                                 {
+                                    "Ref":"DomainAdminPassword"
+                                 },
+                                 " -AsPlainText -Force))) ",
+                                 "-SafeModeAdministratorPassword ",
+                                 "(ConvertTo-SecureString ",
+                                 {
+                                    "Ref":"DomainAdminPassword"
+                                 },
+                                 " -AsPlainText -Force) ",
+                                 "-Confirm:$false -Force\""
+                              ]
+                           ]
+                        },
+                        "waitAfterCompletion":"forever"
+                     }
+                  }
+               },
+               "finalize":{
+                  "commands":{
+                     "a-update-dns-servers-dc2":{
+                        "command":{
+                           "Fn::Join":[
+                              "",
+                              [
+                                 "powershell.exe -Command \"",
+                                 "Get-NetAdapter | Set-DnsClientServerAddress -ServerAddresses ",
+                                 {
+                                    "Ref":"DomainController1PrivateIp"
+                                 },
+                                 ",",
+                                 {
+                                    "Ref":"DomainController2PrivateIp"
+                                 },
+                                 "\""
+                              ]
+                           ]
+                        },
+                        "waitAfterCompletion":"0"
+                     },
+                     "b-update-dns-servers-dc1":{
+                        "command":{
+                           "Fn::Join":[
+                              "",
+                              [
+                                 "powershell.exe -Command ",
+                                 "\"Invoke-Command -Scriptblock{ ",
+                                 "Get-NetAdapter | Set-DnsClientServerAddress -ServerAddresses ",
+                                 {
+                                    "Ref":"DomainController2PrivateIp"
+                                 },
+                                 ",",
+                                 {
+                                    "Ref":"DomainController1PrivateIp"
+                                 },
+                                 " } -ComputerName ",
+                                 {
+                                    "Ref":"ADServerNetBIOSName1"
+                                 },
+                                 " -Credential ",
+                                 "(New-Object System.Management.Automation.PSCredential('",
+                                 {
+                                    "Ref":"DomainNetBIOSName"
+                                 },
+                                 "\\",
+                                 {
+                                    "Ref":"DomainAdminUser"
+                                 },
+                                 "',",
+                                 "(ConvertTo-SecureString ",
+                                 {
+                                    "Ref":"DomainAdminPassword"
+                                 },
+                                 " -AsPlainText -Force))) ",
+                                 "\""
+                              ]
+                           ]
+                        },
+                        "waitAfterCompletion":"0"
+                     },
+                     "c-signal-success":{
+                        "command":{
+                           "Fn::Join":[
+                              "",
+                              [
+                                 "cfn-signal.exe -e 0 \"",
+                                 {
+                                    "Ref":"DomainController2WaitHandle"
+                                 },
+                                 "\""
+                              ]
+                           ]
+                        }
+                     }
+                  }
+               }
+            }
+         },         
+         "Properties":{
+            "ImageId":{
+               "Fn::FindInMap":[
+                  "WindowsAMI",
+                  {
+                     "Ref":"AWS::Region"
+                  },
+                  {
+                     "Fn::FindInMap":[
+                        "InstanceArchitecture",
+                        {
+                           "Ref":"InstanceType"
+                        },
+                        "Arch"
+                     ]
+                  }
+               ]
+            },
+            "InstanceType":{
+               "Ref":"InstanceType"
+            },
+            "SubnetId":{
+               "Ref":"PrivateSubnet2"
+            },
+            "Tags":[
+               {
+                  "Key":"Name",
+                  "Value":{
+                     "Ref":"ADServerNetBIOSName2"
+                  }
+               }
+            ],
+            "BlockDeviceMappings":[
+               {
+                  "DeviceName":"/dev/sda1",
+                  "Ebs":{
+                     "VolumeSize":"60",
+                     "VolumeType":"standard"
+                  }
+               }
+            ],
+            "SecurityGroupIds":[
+               {
+                  "Ref":"DomainMemberSecurityGroup"
+               }
+            ],
+            "PrivateIpAddress":{
+               "Ref":"DomainController2PrivateIp"
+            },
+            "KeyName":{
+               "Ref":"KeyPairName"
+            },
+            "UserData":{
+               "Fn::Base64":{
+                  "Fn::Join":[
+                     "",
+                     [
+                        "<script>\n",
+                        "cfn-init.exe -v -c config -s ",
+                        {
+                           "Ref":"AWS::StackId"
+                        },
+                        " -r DomainController2",
+                        " --region ",
+                        {
+                           "Ref":"AWS::Region"
+                        },
+                        "\n",
+                        "</script>\n"
+                     ]
+                  ]
+               }
+            }            
+         }
+      },
+      "ADFS1":{
+         "Type":"AWS::EC2::Instance",
+         "DependsOn":"DomainController2",
+         "Properties":{
+            "ImageId":{
+               "Fn::FindInMap":[
+                  "WindowsAMI",
+                  {
+                     "Ref":"AWS::Region"
+                  },
+                  {
+                     "Fn::FindInMap":[
+                        "InstanceArchitecture",
+                        {
+                           "Ref":"InstanceType"
+                        },
+                        "Arch"
+                     ]
+                  }
+               ]
+            },
+            "InstanceType":{
+               "Ref":"InstanceType"
+            },
+            "SubnetId":{
+               "Ref":"PublicSubnet1"
+            },
+            "Tags":[
+               {
+                  "Key":"Name",
+                  "Value":"ADFS1"
+               }
+            ],
+            "BlockDeviceMappings":[
+               {
+                  "DeviceName":"/dev/sda1",
+                  "Ebs":{
+                     "VolumeSize":"40",
+                     "VolumeType":"standard"
+                  }
+               }
+            ],
+            "SecurityGroupIds":[
+               {
+                  "Ref":"DomainMemberSecurityGroup"
+               },
+               {
+                  "Ref":"ADFSSecurityGroup"
+               }
+            ],
+            "KeyName":{
+               "Ref":"KeyPairName"
+            }
+         }
+      },
+      "ADFS2":{
+         "Type":"AWS::EC2::Instance",
+         "DependsOn":"DomainController2",
+         "Properties":{
+            "ImageId":{
+               "Fn::FindInMap":[
+                  "WindowsAMI",
+                  {
+                     "Ref":"AWS::Region"
+                  },
+                  {
+                     "Fn::FindInMap":[
+                        "InstanceArchitecture",
+                        {
+                           "Ref":"InstanceType"
+                        },
+                        "Arch"
+                     ]
+                  }
+               ]
+            },
+            "InstanceType":{
+               "Ref":"InstanceType"
+            },
+            "SubnetId":{
+               "Ref":"PublicSubnet2"
+            },
+            "Tags":[
+               {
+                  "Key":"Name",
+                  "Value":"ADFS2"
+               }
+            ],
+            "BlockDeviceMappings":[
+               {
+                  "DeviceName":"/dev/sda1",
+                  "Ebs":{
+                     "VolumeSize":"40",
+                     "VolumeType":"standard"
+                  }
+               }
+            ],
+            "SecurityGroupIds":[
+               {
+                  "Ref":"DomainMemberSecurityGroup"
+               },
+               {
+                  "Ref":"ADFSSecurityGroup"
+               }
+            ],
+            "KeyName":{
+               "Ref":"KeyPairName"
+            }
+         }
+      },
+      "WAP1":{
+         "DependsOn":"ADFS1",
+         "Type":"AWS::EC2::Instance",
+         "Properties":{
+            "ImageId":{
+               "Fn::FindInMap":[
+                  "WindowsAMI",
+                  {
+                     "Ref":"AWS::Region"
+                  },
+                  {
+                     "Fn::FindInMap":[
+                        "InstanceArchitecture",
+                        {
+                           "Ref":"InstanceType"
+                        },
+                        "Arch"
+                     ]
+                  }
+               ]
+            },
+            "InstanceType":{
+               "Ref":"InstanceType"
+            },
+            "Tags":[
+               {
+                  "Key":"Name",
+                  "Value":"WAP1"
+               }
+            ],
+            "BlockDeviceMappings":[
+               {
+                  "DeviceName":"/dev/sda1",
+                  "Ebs":{
+                     "VolumeSize":"40",
+                     "VolumeType":"standard"
+                  }
+               }
+            ],
+            "KeyName":{
+               "Ref":"KeyPairName"
+            },
+            "SecurityGroupIds":[
+               {
+                  "Ref":"RDPSecurityGroup"
+               },
+               {
+                  "Ref":"WebServerSecurityGroup"
+               },
+               {
+                  "Ref":"WAPSecurityGroup"
+               }
+            ],
+            "SubnetId":{
+               "Ref":"PublicSubnet1"
+            }
+         }
+      },
+      "WAP2":{
+         "DependsOn":"ADFS1",
+         "Type":"AWS::EC2::Instance",
+         "Properties":{
+            "ImageId":{
+               "Fn::FindInMap":[
+                  "WindowsAMI",
+                  {
+                     "Ref":"AWS::Region"
+                  },
+                  {
+                     "Fn::FindInMap":[
+                        "InstanceArchitecture",
+                        {
+                           "Ref":"InstanceType"
+                        },
+                        "Arch"
+                     ]
+                  }
+               ]
+            },
+            "InstanceType":{
+               "Ref":"InstanceType"
+            },
+            "Tags":[
+               {
+                  "Key":"Name",
+                  "Value":"WAP2"
+               }
+            ],
+            "BlockDeviceMappings":[
+               {
+                  "DeviceName":"/dev/sda1",
+                  "Ebs":{
+                     "VolumeSize":"40",
+                     "VolumeType":"standard"
+                  }
+               }
+            ],
+            "KeyName":{
+               "Ref":"KeyPairName"
+            },
+            "SecurityGroupIds":[
+               {
+                  "Ref":"RDPSecurityGroup"
+               },
+               {
+                  "Ref":"WebServerSecurityGroup"
+               },
+               {
+                  "Ref":"WAPSecurityGroup"
+               }
+            ],
+            "SubnetId":{
+               "Ref":"PublicSubnet2"
+            }
+         }
+      },
+      "DomainController1WaitCondition":{
+         "Type":"AWS::CloudFormation::WaitCondition",
+         "DependsOn":"DomainController1",
+         "Properties":{
+            "Handle":{
+               "Ref":"DomainController1WaitHandle"
+            },
+            "Timeout":"3600"
+         }
+      },
+      "DomainController1WaitHandle":{
+         "Type":"AWS::CloudFormation::WaitConditionHandle"
+      },
+      "DomainController2WaitCondition":{
+         "Type":"AWS::CloudFormation::WaitCondition",
+         "DependsOn":"DomainController2",
+         "Properties":{
+            "Handle":{
+               "Ref":"DomainController2WaitHandle"
+            },
+            "Timeout":"3600"
+         }
+      },
+      "DomainController2WaitHandle":{
+         "Type":"AWS::CloudFormation::WaitConditionHandle"
       },
       "WebServerSecurityGroup":{
          "Type":"AWS::EC2::SecurityGroup",
@@ -1432,7 +1853,7 @@
                   "FromPort":"1",
                   "ToPort":"65535",
                   "CidrIp":{
-                     "Ref":"PrivateSubnetCIDR1"
+                     "Ref":"PrivateSubnet1CIDR"
                   }
                },
                {
@@ -1440,7 +1861,7 @@
                   "FromPort":"1",
                   "ToPort":"65535",
                   "CidrIp":{
-                     "Ref":"PrivateSubnetCIDR2"
+                     "Ref":"PrivateSubnet2CIDR"
                   }
                }
             ]
@@ -1538,6 +1959,55 @@
       }
    },
    "Outputs":{
-
+      "WAP1ElasticIP":{
+         "Value":{
+            "Ref":"WAP1EIP"
+         },
+         "Description":"Elastic IP address of the first Web Application Proxy (WAP1) in AZ1"
+      },
+      "WAP2ElasticIP":{
+         "Value":{
+            "Ref":"WAP2EIP"
+         },
+         "Description":"Elastic IP address of the second Web Application Proxy (WAP2) in AZ2"
+      },
+      "DomainAdmin":{
+         "Value":{
+            "Fn::Join":[
+               "",
+               [
+                  {
+                     "Ref":"DomainNetBIOSName"
+                  },
+                  "\\StackAdmin"
+               ]
+            ]
+         },
+         "Description":"Domain administrator account"
+      },
+      "VPC":{
+         "Value":{
+            "Ref":"VPC"
+         },
+         "Description":"VPC ID"
+      },
+      "VPCCIDR":{
+         "Value":{
+            "Ref":"VPCCIDR"
+         },
+         "Description":"VPC CIDR"
+      },
+      "AD1SubnetId":{
+         "Value":{
+            "Ref":"PrivateSubnet1"
+         },
+         "Description":"Subnet ID for the AD Domain Controller tier in AZ1"
+      },
+      "AD2SubnetId":{
+         "Value":{
+            "Ref":"PrivateSubnet2"
+         },
+         "Description":"Subnet ID for the AD Domain Controller tier in AZ2"
+      }
    }
 }
