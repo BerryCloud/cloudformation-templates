@@ -114,9 +114,24 @@
          "Default":"10.0.2.10"
       },
       "DomainController2PrivateIp":{
-         "Description":"Fixed private IP for the second Active Directory serverr located in AZ2",
+         "Description":"Fixed private IP for the second Active Directory server located in AZ2",
          "Type":"String",
          "Default":"10.0.3.10"
+      },
+      "ADFS1PrivateIp":{
+         "Description":"Fixed private IP for the first Active Directory Federated server located in AZ1",
+         "Type":"String",
+         "Default":"10.0.2.11"
+      },
+      "ADFS2PrivateIp":{
+         "Description":"Fixed private IP for the second Active Directory Federated server located in AZ2",
+         "Type":"String",
+         "Default":"10.0.3.11"
+      },
+      "SyncPrivateIp":{
+         "Description":"Fixed private IP for the DirSync server located in AZ2",
+         "Type":"String",
+         "Default":"10.0.3.12"
       }
    },
    "Mappings":{
@@ -620,12 +635,12 @@
                               [
                                  "[cfn-auto-reloader-hook]\n",
                                  "triggers=post.update\n",
-                                 "path=Resources.RDGateway.Metadata.AWS::CloudFormation::Init\n",
+                                 "path=Resources.Sync.Metadata.AWS::CloudFormation::Init\n",
                                  "action=cfn-init.exe -v -c config -s ",
                                  {
                                     "Ref":"AWS::StackId"
                                  },
-                                 " -r RDGateway",
+                                 " -r Sync",
                                  " --region ",
                                  {
                                     "Ref":"AWS::Region"
@@ -726,7 +741,7 @@
                            "Fn::Join":[
                               "",
                               [
-                                 "powershell.exe -Command \"Install-WindowsFeature –name NET-Framework-Core\""
+                                 "powershell.exe -Command \"Install-WindowsFeature -name NET-Framework-Core\""
                               ]
                            ]
                         },
@@ -758,7 +773,7 @@
                "Ref":"InstanceType"
             },
             "SubnetId":{
-               "Ref":"PublicSubnet2"
+               "Ref":"PrivateSubnet2"
             },
             "Tags":[
                {
@@ -780,6 +795,9 @@
                   "Ref":"DomainMemberSecurityGroup"
                }
             ],
+            "PrivateIpAddress":{
+               "Ref":"SyncPrivateIp"
+            },            
             "KeyName":{
                "Ref":"KeyPairName"
             },
@@ -899,12 +917,12 @@
                               [
                                  "[cfn-auto-reloader-hook]\n",
                                  "triggers=post.update\n",
-                                 "path=Resources.DomainController.Metadata.AWS::CloudFormation::Init\n",
+                                 "path=Resources.DomainController1.Metadata.AWS::CloudFormation::Init\n",
                                  "action=cfn-init.exe -v -c config -s ",
                                  {
                                     "Ref":"AWS::StackId"
                                  },
-                                 " -r DomainController",
+                                 " -r DomainController1",
                                  " --region ",
                                  {
                                     "Ref":"AWS::Region"
@@ -1710,12 +1728,12 @@
                               [
                                  "[cfn-auto-reloader-hook]\n",
                                  "triggers=post.update\n",
-                                 "path=Resources.RDGateway.Metadata.AWS::CloudFormation::Init\n",
+                                 "path=Resources.ADFS1.Metadata.AWS::CloudFormation::Init\n",
                                  "action=cfn-init.exe -v -c config -s ",
                                  {
                                     "Ref":"AWS::StackId"
                                  },
-                                 " -r RDGateway",
+                                 " -r ADFS1",
                                  " --region ",
                                  {
                                     "Ref":"AWS::Region"
@@ -1824,7 +1842,7 @@
                      }
                   }
                }
-             }
+            }
          },         
 
          "Properties":{
@@ -1849,7 +1867,7 @@
                "Ref":"InstanceType"
             },
             "SubnetId":{
-               "Ref":"PublicSubnet1"
+               "Ref":"PrivateSubnet1"
             },
             "Tags":[
                {
@@ -1874,6 +1892,9 @@
                   "Ref":"ADFSSecurityGroup"
                }
             ],
+            "PrivateIpAddress":{
+               "Ref":"ADFS1PrivateIp"
+            },                        
             "KeyName":{
                "Ref":"KeyPairName"
             },
@@ -1909,7 +1930,8 @@
                   "config":[
                      "setup",
                      "rename",
-                     "join"
+                     "join",
+                     "adfs"
                   ]
                },
                "setup":{
@@ -1941,12 +1963,12 @@
                               [
                                  "[cfn-auto-reloader-hook]\n",
                                  "triggers=post.update\n",
-                                 "path=Resources.RDGateway.Metadata.AWS::CloudFormation::Init\n",
+                                 "path=Resources.ADFS2.Metadata.AWS::CloudFormation::Init\n",
                                  "action=cfn-init.exe -v -c config -s ",
                                  {
                                     "Ref":"AWS::StackId"
                                  },
-                                 " -r RDGateway",
+                                 " -r ADFS2",
                                  " --region ",
                                  {
                                     "Ref":"AWS::Region"
@@ -2039,9 +2061,24 @@
                         "waitAfterCompletion":"forever"
                      }
                   }
+               },
+               "adfs":{
+                  "commands":{
+                     "a-install-adfs-federation":{
+                        "command":{
+                           "Fn::Join":[
+                              "",
+                              [
+                                 "powershell.exe -Command \"Install-windowsfeature adfs-federation -IncludeManagementTools\""
+                              ]
+                           ]
+                        },
+                        "waitAfterCompletion":"30"
+                     }
+                  }
                }
-             }
-         },                  
+            }
+         },         
          "Properties":{
             "ImageId":{
                "Fn::FindInMap":[
@@ -2064,7 +2101,7 @@
                "Ref":"InstanceType"
             },
             "SubnetId":{
-               "Ref":"PublicSubnet2"
+               "Ref":"PrivateSubnet2"
             },
             "Tags":[
                {
@@ -2089,6 +2126,9 @@
                   "Ref":"ADFSSecurityGroup"
                }
             ],
+            "PrivateIpAddress":{
+               "Ref":"ADFS2PrivateIp"
+            },            
             "KeyName":{
                "Ref":"KeyPairName"
             },
@@ -2154,9 +2194,6 @@
                   }
                }
             ],
-            "KeyName":{
-               "Ref":"KeyPairName"
-            },
             "SecurityGroupIds":[
                {
                   "Ref":"RDPSecurityGroup"
@@ -2170,7 +2207,31 @@
             ],
             "SubnetId":{
                "Ref":"PublicSubnet1"
-            }
+            },
+            "KeyName":{
+               "Ref":"KeyPairName"
+            },
+            "UserData":{
+               "Fn::Base64":{
+                  "Fn::Join":[
+                     "",
+                     [
+                        "<script>\n",
+                        "cfn-init.exe -v -c config -s ",
+                        {
+                           "Ref":"AWS::StackId"
+                        },
+                        " -r ADFS1",
+                        " --region ",
+                        {
+                           "Ref":"AWS::Region"
+                        },
+                        "\n",
+                        "</script>\n"
+                     ]
+                  ]
+               }
+            }            
          }
       },
       "WAP2":{
