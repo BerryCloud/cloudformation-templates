@@ -1280,6 +1280,9 @@
             "SecurityGroupIds":[
                {
                   "Ref":"DomainMemberSecurityGroup"
+               },
+               {
+                  "Ref":"DomainNameSystemSecurityGroup"
                }
             ],
             "PrivateIpAddress":{
@@ -1655,6 +1658,9 @@
             "SecurityGroupIds":[
                {
                   "Ref":"DomainMemberSecurityGroup"
+               },
+               {
+                  "Ref":"DomainNameSystemSecurityGroup"
                }
             ],
             "PrivateIpAddress":{
@@ -2163,6 +2169,7 @@
                   "config":[
                      "setup",
                      "rename",
+                     "join",
                      "wap"
                   ]
                },
@@ -2236,6 +2243,30 @@
                            ]
                         },
                         "waitAfterCompletion":"forever"
+                     }
+                  }
+               },
+               "join":{
+                  "commands":{
+                     "a-set-dns-servers":{
+                        "command":{
+                           "Fn::Join":[
+                              "",
+                              [
+                                 "powershell.exe -Command \"",
+                                 "Get-NetAdapter | Set-DnsClientServerAddress -ServerAddresses ",
+                                 {
+                                    "Ref":"DomainController1PrivateIp"
+                                 },
+                                 ",",
+                                 {
+                                    "Ref":"DomainController2PrivateIp"
+                                 },
+                                 "\""
+                              ]
+                           ]
+                        },
+                        "waitAfterCompletion":"30"
                      }
                   }
                },
@@ -2341,6 +2372,7 @@
                   "config":[
                      "setup",
                      "rename",
+                     "join",
                      "wap"
                   ]
                },
@@ -2417,6 +2449,30 @@
                      }
                   }
                },
+               "join":{
+                  "commands":{
+                     "a-set-dns-servers":{
+                        "command":{
+                           "Fn::Join":[
+                              "",
+                              [
+                                 "powershell.exe -Command \"",
+                                 "Get-NetAdapter | Set-DnsClientServerAddress -ServerAddresses ",
+                                 {
+                                    "Ref":"DomainController1PrivateIp"
+                                 },
+                                 ",",
+                                 {
+                                    "Ref":"DomainController2PrivateIp"
+                                 },
+                                 "\""
+                              ]
+                           ]
+                        },
+                        "waitAfterCompletion":"30"
+                     }
+                  }
+               },               
                "wap":{
                   "commands":{
                      "a-install-wap":{
@@ -2660,6 +2716,41 @@
             ]
          }
       },
+
+      "DomainNameSystemSecurityGroup":{
+         "Type":"AWS::EC2::SecurityGroup",
+         "Properties":{
+            "Tags":[
+               {
+                  "Key":"Name",
+                  "Value":"Domain Name System"
+               }
+            ],
+            "GroupDescription":"Enable access from Public Subnets",
+            "VpcId":{
+               "Ref":"VPC"
+            },
+            "SecurityGroupIngress":[
+               {
+                  "IpProtocol":"udp",
+                  "FromPort":"53",
+                  "ToPort":"53",
+                  "CidrIp":{
+                     "Ref":"PublicSubnet1CIDR"
+                  }
+               },
+               {
+                  "IpProtocol":"udp",
+                  "FromPort":"53",
+                  "ToPort":"53",
+                  "CidrIp":{
+                     "Ref":"PublicSubnet2CIDR"
+                  }
+               }
+            ]
+         }
+      },
+
       "ADFSSecurityGroup":{
          "Type":"AWS::EC2::SecurityGroup",
          "Properties":{
