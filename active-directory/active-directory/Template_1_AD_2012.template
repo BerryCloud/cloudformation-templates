@@ -9,60 +9,57 @@
       "ADInstanceType":{
          "Description":"Amazon EC2 instance type for the first Active Directory Instance",
          "Type":"String",
-         "Default":"m3.xlarge",
+         "Default":"t2.small",
          "AllowedValues":[
-            "m1.small",
-            "m1.medium",
-            "m1.large",
-            "m2.xlarge",
-            "m2.2xlarge",
-            "m2.4xlarge",
+            "t2.micro",
+            "t2.small",
+            "t2.medium",
+            "m3.medium",
+            "m3.large",
             "m3.xlarge",
-            "c1.medium",
-            "c1.xlarge"
+            "m3.2xlarge"
          ]
       },
       "AD2InstanceType":{
          "Description":"Amazon EC2 instance type for the second Active Directory Instance",
          "Type":"String",
-         "Default":"m3.xlarge",
+         "Default":"t2.small",
          "AllowedValues":[
-            "m1.small",
-            "m1.medium",
-            "m1.large",
-            "m2.xlarge",
-            "m2.2xlarge",
-            "m2.4xlarge",
+            "t2.micro",
+            "t2.small",
+            "t2.medium",
+            "m3.medium",
+            "m3.large",
             "m3.xlarge",
-            "c1.medium",
-            "c1.xlarge"
+            "m3.2xlarge"
          ]
       },
       "NATInstanceType":{
          "Description":"Amazon EC2 instance type for the NAT Instances",
          "Type":"String",
-         "Default":"m1.small",
+         "Default":"t2.small",
          "AllowedValues":[
-            "m1.small",
-            "m1.medium",
-            "m1.large",
-            "m1.xlarge"
+            "t2.micro",
+            "t2.small",
+            "t2.medium",
+            "m3.medium",
+            "m3.large",
+            "m3.xlarge",
+            "m3.2xlarge"
          ]
       },
       "RDGWInstanceType":{
          "Description":"Amazon EC2 instance type for the Remote Desktop Gatweway Instance",
          "Type":"String",
-         "Default":"m3.xlarge",
+         "Default":"t2.small",
          "AllowedValues":[
-            "m1.small",
-            "m1.medium",
-            "m1.large",
-            "m2.xlarge",
-            "m2.2xlarge",
-            "m2.4xlarge",
+            "t2.micro",
+            "t2.small",
+            "t2.medium",
+            "m3.medium",
+            "m3.large",
             "m3.xlarge",
-            "c1.medium",
-            "c1.xlarge"
+            "m3.2xlarge"
          ]
       },
       "DomainDNSName":{
@@ -207,87 +204,54 @@
    },
    "Mappings":{
       "AWSInstanceType2Arch":{
-         "m1.small":{
+         "t2.micro":{
             "Arch":"64"
          },
-         "m1.medium":{
+         "t2.small":{
             "Arch":"64"
          },
-         "m1.large":{
+         "t2.medium":{
             "Arch":"64"
          },
-         "m2.xlarge":{
+         "m3.medium":{
             "Arch":"64"
          },
-         "m2.2xlarge":{
-            "Arch":"64"
-         },
-         "m2.4xlarge":{
+         "m3.large":{
             "Arch":"64"
          },
          "m3.xlarge":{
             "Arch":"64"
          },
-         "c1.medium":{
-            "Arch":"64"
-         },
-         "c1.xlarge":{
+         "m3.2xlarge":{
             "Arch":"64"
          }
       },
       "AWSRegionArch2AMI":{
          "us-east-1":{
-            "64":"ami-9ade1df2"
+            "64":"ami-ba13abd2"
          },
          "us-west-2":{
-            "64":"ami-57e29c67"
+            "64":"ami-21f0bc11"
          },
          "us-west-1":{
-            "64":"ami-afc6c6ea"
+            "64":"ami-df43569a"
          },
          "eu-west-1":{
-            "64":"ami-6f2efa18"
-         },
-         "ap-southeast-1":{
-            "64":"ami-de0b528c"
-         },
-         "ap-northeast-1":{
-            "64":"ami-23510022"
-         },
-         "sa-east-1":{
-            "64":"ami-ff7cd2e2"
-         },
-         "ap-southeast-2":{
-            "64":"ami-6156315b"
+            "64":"ami-d4228ea3"
          }
       },
       "AWSRegionArchNatAMI":{
          "us-east-1":{
-            "64":"ami-f619c29f"
+            "64":"ami-4c9e4b24"
          },
          "us-west-2":{
-            "64":"ami-52ff7262"
+            "64":"ami-bb69128b"
          },
          "us-west-1":{
-            "64":"ami-3bcc9e7e"
+            "64":"ami-2b2b296e"
          },
          "eu-west-1":{
-            "64":"ami-e5e2d991"
-         },
-         "ap-southeast-1":{
-            "64":"ami-02eb9350"
-         },
-         "ap-southeast-2":{
-            "64":"ami-ab990e91"
-         },
-         "ap-northeast-1":{
-            "64":"ami-12d86d13"
-         },
-         "sa-east-1":{
-            "64":"ami-0039e61d"
-         },
-         "us-gov-west-1":{
-            "64":"ami-ff5a3edc"
+            "64":"ami-3760b040"
          }
       }
    },
